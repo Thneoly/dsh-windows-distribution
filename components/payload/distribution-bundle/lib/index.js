@@ -9,7 +9,7 @@ export const Config = z.object({});
 const BUNDLE_NAME = '@thneoly/dsh-distribution-bundle';
 const BUNDLE_VERSION = '1.0.0';
 const WORKFLOWS = new Map([
-  ['distribution-smoke', new URL('./workflows/distribution-smoke.md', import.meta.url)]
+  ['distribution-smoke', new URL('../workflows/distribution-smoke.md', import.meta.url)]
 ]);
 
 const TEXT_OUTPUT = {
