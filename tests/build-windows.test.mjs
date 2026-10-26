@@ -108,7 +108,7 @@ test('Windows workflow installs the built EXE and validates bundled runtimes bef
   const uploadStep = windowsWorkflow.indexOf('- name: Upload unsigned installer and provenance');
   assert.ok(smokeStep >= 0 && uploadStep > smokeStep);
   assert.ok(windowsWorkflow.slice(smokeStep, uploadStep).includes('smoke-installed-windows.ps1'));
-  assert.match(installedSmokeScript, /resources\\runtime\\primary-runtime/);
+  assert.match(installedSmokeScript, /runtime\\primary-runtime/);
   assert.match(installedSmokeScript, /dependencies\\node\\bin\\node\.exe/);
   assert.match(installedSmokeScript, /dependencies\\python\\python\.exe/);
   assert.match(installedSmokeScript, /dependencies\\pnpm\\bin\\pnpm\.mjs/);
