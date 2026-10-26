@@ -25,8 +25,10 @@
 
 - [x] Add a Windows x64 build orchestrator that verifies the pinned DSH checkout and exact build-host Node.js/Python/pnpm versions.
 - [x] Add a manual Windows Actions workflow for an unsigned test installer, with explicit HTTPS origin inputs and artifact provenance/SHA-256 output.
-- [ ] Run the workflow with real test-service origins and inspect the generated installer.
-- [ ] Install and run on a clean Windows x64 VM without system Node.js, Python or pnpm.
+- [x] Add a service-free `build-only` profile that embeds only reserved `.invalid` origins and marks the artifact non-distributable.
+- [ ] Run the default build-only workflow and inspect the generated installer/provenance bundle.
+- [ ] Install and verify the packaged runtime on a clean Windows x64 VM without system Node.js, Python or pnpm.
+- [ ] Configure real test-service origins and repeat the functional login/update tests when those services exist.
 
 ## P4 — Distribution components and upgrade safety
 
