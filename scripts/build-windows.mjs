@@ -151,7 +151,7 @@ export function createBuildOnlyConfig(releaseId = randomBytes(16).toString('hex'
     'DSH_DESKTOP_MANDATORY_UPDATE_TEST_ORIGIN=https://dsh-mandatory-update-build-only.invalid',
     `DSH_DESKTOP_MANDATORY_UPDATE_CONFIG='{"allowedAuthOrigins":["https://dsh-login-build-only.invalid"]}'`,
     ''
-  ].join('\\n');
+  ].join('\n');
 }
 
 async function resolveConfig(configArgument, upstreamRoot, profile) {
