@@ -52,7 +52,7 @@ export function validateUpstreamPin(pin) {
         errors.push('toolchain.' + field + ' must be an exact version');
       }
     }
-    if (typeof pin.toolchain.pythonRelease !== 'string' || !/^\\d{8}$/.test(pin.toolchain.pythonRelease)) {
+    if (typeof pin.toolchain.pythonRelease !== 'string' || !/^\d{8}$/.test(pin.toolchain.pythonRelease)) {
       errors.push('toolchain.pythonRelease must be YYYYMMDD');
     }
   }
