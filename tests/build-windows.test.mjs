@@ -78,3 +78,14 @@ test('build-only manifest clearly marks the artifact as non-distributable and un
   assert.equal(manifest.networkServicesConfigured, false);
   assert.equal(manifest.distributionEligible, false);
 });
+
+const windowsWorkflow = await readFile(new URL('../.github/workflows/windows-unsigned.yml', import.meta.url), 'utf8');
+
+test('GitHub Windows packaging uses a physical short workspace and copies artifacts back', () => {
+  assert.ok(windowsWorkflow.includes("$shortRoot = 'C:\\w'"));
+  assert.ok(windowsWorkflow.includes('robocopy "$env:GITHUB_WORKSPACE" $shortRoot'));
+  assert.ok(windowsWorkflow.includes('if ($resolvedRoot -ne $shortRoot)'));
+  assert.ok(windowsWorkflow.includes('robocopy $sourceArtifacts $destinationArtifacts'));
+  assert.match(windowsWorkflow, /Expected lxml extension path length/);
+  assert.doesNotMatch(windowsWorkflow, /\\bsubst\\s+\\$drive/i);
+});
