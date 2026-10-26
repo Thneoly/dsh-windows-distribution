@@ -28,6 +28,14 @@ The first build baseline is the latest published upstream GitHub Release verifie
 - The distribution lock is authoritative for the exact built-in component set and file digests.
 - Any change to a pinned artifact or built-in component produces a new distribution release.
 
+## Version-locked built-in components
+
+The repository's `components/desktop-distribution.json` is the human-edited declaration. `components/desktop-distribution.lock.json` records the exact SHA-256 of every declared payload file and the upstream runtime identity. CI verifies that the lock matches the declaration, that every payload file is listed exactly once in the inventory, and that no unlisted files or symlinks are present.
+
+The Windows build adapter verifies the pinned upstream checkout first, then stages the local bundle into the upstream workspace, adds it as a dependency of the DSH CLI package, and registers it in DSH's installation-owned optional-bundle catalog. It regenerates the upstream pnpm lock with the pinned pnpm version before performing the normal frozen install. The build must verify that the resulting runtime contains the bundle package, the compiled optional-bundle catalog, and the exact locked payload before it can mark `customDistributionComponentsIncluded: true` in release provenance.
+
+The initial `@thneoly/dsh-distribution-bundle` is intentionally a small acceptance bundle: it provides read-only tools for reporting the bundled component version and reading a version-locked workflow recipe. It ships with the installer but is switched off until the user enables it through DSH's existing optional-bundle manager. User-installed extensions remain in the profile/user-owned area and are not overwritten by a release upgrade.
+
 ## Integrity and execution
 
 SHA-256 detects unexpected content changes but does not establish publisher identity. Production release artifacts must also be signed and verified against a trusted signing identity. A digest does not sandbox executable code: third-party extensions require explicit trust and permission policy.
