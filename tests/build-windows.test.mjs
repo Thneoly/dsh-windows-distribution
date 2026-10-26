@@ -37,6 +37,8 @@ test('build manifest records the pinned source and unsigned mode', () => {
   assert.equal(manifest.upstreamCommit, pin.commit);
   assert.equal(manifest.buildMode, 'unsigned-test');
   assert.equal(manifest.customDistributionComponentsIncluded, false);
+  assert.equal(manifest.toolchain.pythonVersion, '3.12.14');
+  assert.deepEqual(manifest.buildHostToolchain, pin.buildHostToolchain);
   assert.equal(manifest.artifacts[0].sha256, 'a'.repeat(64));
 });
 
