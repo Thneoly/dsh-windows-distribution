@@ -10,6 +10,7 @@
   "scripts": {
     "test": "node --test",
     "validate:example": "node scripts/validate-distribution.mjs examples/desktop-distribution.json --root examples/payload",
-    "validate:runtime-lock:fixture": "node scripts/verify-runtime-lock.mjs fixtures/primary-runtime-lock.minimal.json"
+    "validate:runtime-lock:fixture": "node scripts/verify-runtime-lock.mjs fixtures/primary-runtime-lock.minimal.json",
+    "validate:upstream-pin": "node scripts/validate-upstream-pin.mjs upstream.lock.json"
   }
 }
