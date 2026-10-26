@@ -87,5 +87,5 @@ test('GitHub Windows packaging uses a physical short workspace and copies artifa
   assert.ok(windowsWorkflow.includes('if ($resolvedRoot -ne $shortRoot)'));
   assert.ok(windowsWorkflow.includes('robocopy $sourceArtifacts $destinationArtifacts'));
   assert.match(windowsWorkflow, /Expected lxml extension path length/);
-  assert.doesNotMatch(windowsWorkflow, /\\bsubst\\s+\\$drive/i);
+  assert.doesNotMatch(windowsWorkflow, /\bsubst\s+\$drive/i);
 });
