@@ -6,6 +6,10 @@ This repository is a distribution/build companion for the upstream DSH Desktop p
 
 Upstream repository: https://github.com/deepseek-ai/deepseek-harness
 
+## Pinned upstream baseline
+
+The first build baseline is the latest published upstream GitHub Release verified on 2026-10-26: `v0.2.1-rc.3`, tag `dsh-v0.2.1-rc.3`, commit `1f81c047fc48fa190a683e469daa699857e9afe8`. It is a prerelease, not a stable release. See [`../upstream.lock.json`](../upstream.lock.json) for immutable release metadata and Git blob SHAs of key lock/config files. The build must check out the exact commit and must not use `master` or a floating tag.
+
 ## Runtime layers
 
 1. **Build toolchain**: Node.js used by developers and CI. This repository pins it in `.node-version`.
@@ -20,7 +24,7 @@ Upstream repository: https://github.com/deepseek-ai/deepseek-harness
 - Do not copy upstream runtime pins into a second editable source of truth. Read the upstream runtime lock and embed its digest plus the verified resolved versions in release metadata.
 - `pnpm-lock.yaml` is authoritative for the JavaScript dependency graph.
 - Electron version determines the Electron-embedded Node.js runtime; validate it from the actual packaged binary.
-- The upstream primary-runtime lock is authoritative for the standalone Node.js, Python artifacts and Python wheels.
+- The upstream primary-runtime lock at the pinned commit is authoritative for the standalone Node.js, Python artifacts and Python wheels. `upstream.lock.json` records its Git blob SHA as a source identity; the build adapter must additionally compute SHA-256 for the downloaded file before packaging.
 - The distribution lock is authoritative for the exact built-in component set and file digests.
 - Any change to a pinned artifact or built-in component produces a new distribution release.
 
