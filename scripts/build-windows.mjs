@@ -6,6 +6,7 @@ import {
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs, promisify } from 'node:util';
+import { applyDistributionComponents, verifyBundledDistributionComponents } from './apply-distribution-components.mjs';
 
 const execFile = promisify(execFileCallback);
 const PROJECT_ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -46,8 +47,12 @@ export function createUnsignedBuildArgs(buildVersion) {
   ];
 }
 
-export function createBuildManifest({ pin, buildVersion, artifacts, builtAt = new Date().toISOString(), profile = 'configured-test' }) {
+export function createBuildManifest({ pin, buildVersion, artifacts, builtAt = new Date().toISOString(), profile = 'configured-test', distributionComponents }) {
   if (!['build-only', 'configured-test'].includes(profile)) throw new Error('build profile must be build-only or configured-test');
+  const componentsIncluded = distributionComponents?.included === true && distributionComponents?.payloadVerified === true;
+  if (distributionComponents !== undefined && !componentsIncluded) {
+    throw new Error('cannot create a release manifest before distribution components are verified in the built runtime');
+  }
   return {
     schemaVersion: 1,
     product: 'deepseek-harness',
@@ -62,7 +67,17 @@ export function createBuildManifest({ pin, buildVersion, artifacts, builtAt = ne
     buildVersion,
     toolchain: pin.toolchain,
     buildHostToolchain: pin.buildHostToolchain,
-    customDistributionComponentsIncluded: false,
+    customDistributionComponentsIncluded: componentsIncluded,
+    ...(componentsIncluded ? {
+      distributionComponentsLockSha256: distributionComponents.lockSha256,
+      distributionPatchedPnpmLockSha256: distributionComponents.patchedPnpmLockSha256,
+      distributionComponentIds: distributionComponents.componentIds,
+      distributionBundle: {
+        name: distributionComponents.bundleName,
+        version: distributionComponents.bundleVersion,
+        payloadFileCount: distributionComponents.payloadFileCount
+      }
+    } : {}),
     builtAt,
     artifacts
   };
@@ -222,7 +237,7 @@ async function sha256(filePath) {
   return createHash('sha256').update(bytes).digest('hex');
 }
 
-async function prepareArtifactDirectory(files, installer, pin, profile) {
+async function prepareArtifactDirectory(files, installer, pin, profile, distributionComponents) {
   const buildVersion = parseInstallerVersion(path.basename(installer.fullPath));
   const destination = path.join(BUILD_ROOT, 'artifacts', buildVersion);
   if (await exists(destination)) {
@@ -242,7 +257,20 @@ async function prepareArtifactDirectory(files, installer, pin, profile) {
     });
   }
 
-  const manifest = createBuildManifest({ pin, buildVersion, artifacts, profile });
+  for (const file of [
+    { source: path.join(PROJECT_ROOT, 'components', 'desktop-distribution.json'), name: 'desktop-distribution.json' },
+    { source: path.join(PROJECT_ROOT, 'components', 'desktop-distribution.lock.json'), name: 'desktop-distribution.lock.json' }
+  ]) {
+    const target = path.join(destination, file.name);
+    await copyFile(file.source, target);
+    artifacts.push({
+      file: file.name,
+      sizeBytes: (await stat(target)).size,
+      sha256: await sha256(target)
+    });
+  }
+
+  const manifest = createBuildManifest({ pin, buildVersion, artifacts, profile, distributionComponents });
   const manifestPath = path.join(destination, 'release-manifest.json');
   await writeFile(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
 
@@ -254,6 +282,8 @@ async function prepareArtifactDirectory(files, installer, pin, profile) {
   const installerArtifact = selectInstallerArtifact(artifacts);
   console.log('Windows installer: ' + path.join(destination, installerArtifact.file));
   console.log('Installer SHA-256: ' + installerArtifact.sha256);
+  console.log('Distribution lock SHA-256: ' + distributionComponents.lockSha256);
+  console.log('Patched upstream pnpm-lock SHA-256: ' + distributionComponents.patchedPnpmLockSha256);
   console.log('Release manifest: ' + manifestPath);
   console.log('Artifact bundle: ' + destination);
 }
@@ -285,6 +315,10 @@ async function main() {
   await runNodeScript(path.join(PROJECT_ROOT, 'scripts', 'checkout-pinned-upstream.mjs'), [path.relative(PROJECT_ROOT, UPSTREAM_ROOT)]);
   await runNodeScript(path.join(PROJECT_ROOT, 'scripts', 'verify-upstream-checkout.mjs'), [UPSTREAM_ROOT]);
 
+  const distributionComponents = await applyDistributionComponents(UPSTREAM_ROOT);
+  await runPnpm(['install', '--lockfile-only', '--ignore-scripts'], UPSTREAM_ROOT);
+  distributionComponents.patchedPnpmLockSha256 = await sha256(path.join(UPSTREAM_ROOT, 'pnpm-lock.yaml'));
+
   const configPath = await resolveConfig(values.config, UPSTREAM_ROOT, values.profile);
   if (!configPath) {
     process.exitCode = 2;
@@ -311,6 +345,7 @@ async function main() {
   }
 
   await runPnpm(createUnsignedBuildArgs(values['build-version']), UPSTREAM_ROOT);
+  const verifiedDistributionComponents = await verifyBundledDistributionComponents(UPSTREAM_ROOT, distributionComponents);
 
   const afterFiles = await listFiles(artifactSource);
   const newFiles = afterFiles.filter((file) => !beforeNames.has(file.relativePath));
@@ -318,7 +353,7 @@ async function main() {
   if (installers.length !== 1) {
     throw new Error('expected exactly one newly created unsigned Windows installer, found ' + installers.length);
   }
-  await prepareArtifactDirectory(newFiles, installers[0], pin, values.profile);
+  await prepareArtifactDirectory(newFiles, installers[0], pin, values.profile, verifiedDistributionComponents);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

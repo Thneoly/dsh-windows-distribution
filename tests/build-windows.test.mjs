@@ -53,6 +53,32 @@ test('build manifest records the pinned source and unsigned mode', () => {
   assert.equal(manifest.artifacts[0].sha256, 'a'.repeat(64));
 });
 
+test('build manifest records component lock provenance only after runtime verification', () => {
+  const distributionComponents = {
+    included: true,
+    payloadVerified: true,
+    lockSha256: 'c'.repeat(64),
+    patchedPnpmLockSha256: 'd'.repeat(64),
+    componentIds: ['org.thneoly.distribution-bundle', 'workflow.distribution-smoke', 'tool.distribution-bundle-info'],
+    bundleName: '@thneoly/dsh-distribution-bundle',
+    bundleVersion: '1.0.0',
+    payloadFileCount: 7
+  };
+  const manifest = createBuildManifest({
+    pin,
+    buildVersion: '0.2.1-rc.3.20261026.2.1',
+    artifacts: [],
+    builtAt: '2026-10-26T00:00:00.000Z',
+    distributionComponents
+  });
+  assert.equal(manifest.customDistributionComponentsIncluded, true);
+  assert.equal(manifest.distributionComponentsLockSha256, 'c'.repeat(64));
+  assert.equal(manifest.distributionPatchedPnpmLockSha256, 'd'.repeat(64));
+  assert.equal(manifest.distributionBundle.name, '@thneoly/dsh-distribution-bundle');
+  assert.equal(manifest.distributionBundle.version, '1.0.0');
+  assert.equal(manifest.distributionBundle.payloadFileCount, 7);
+});
+
 test('preflight runs the exact upstream unsigned package target', () => {
   assert.deepEqual(createUnsignedPreflightArgs(), [
     '--dir', 'apps/desktop', 'run', 'package:win:x64:unsigned', '--', '--check'
@@ -102,6 +128,7 @@ test('GitHub Windows packaging uses a physical short workspace and copies artifa
 });
 
 const installedSmokeScript = await readFile(new URL('../scripts/smoke-installed-windows.ps1', import.meta.url), 'utf8');
+const bundleSmokeScript = await readFile(new URL('../scripts/smoke-distribution-bundle.mjs', import.meta.url), 'utf8');
 
 test('Windows workflow installs the built EXE and validates bundled runtimes before artifact upload', () => {
   const smokeStep = windowsWorkflow.indexOf('- name: Install unsigned installer and verify bundled runtime');
@@ -109,6 +136,12 @@ test('Windows workflow installs the built EXE and validates bundled runtimes bef
   assert.ok(smokeStep >= 0 && uploadStep > smokeStep);
   assert.ok(windowsWorkflow.slice(smokeStep, uploadStep).includes('smoke-installed-windows.ps1'));
   assert.match(installedSmokeScript, /runtime\\primary-runtime/);
+  assert.match(installedSmokeScript, /Join-Path \$resources 'dsh'/);
+  assert.doesNotMatch(installedSmokeScript, /app\.asar\.unpacked/);
+  assert.match(installedSmokeScript, /distributionComponentsLockSha256/);
+  assert.match(installedSmokeScript, /smoke-distribution-bundle\.mjs/);
+  assert.match(bundleSmokeScript, /distribution_bundle_info/);
+  assert.match(bundleSmokeScript, /distribution_workflow_read/);
   assert.match(installedSmokeScript, /dependencies\\node\\bin\\node\.exe/);
   assert.match(installedSmokeScript, /dependencies\\python\\python\.exe/);
   assert.match(installedSmokeScript, /dependencies\\pnpm\\bin\\pnpm\.mjs/);

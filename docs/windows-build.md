@@ -76,11 +76,13 @@ Output is written to:
 ```text
 .build/artifacts/<build-version>/
   deepseek-harness-<build-version>-win-x64-unsigned.exe
+  desktop-distribution.json
+  desktop-distribution.lock.json
   release-manifest.json
   SHA256SUMS.txt
 ```
 
-`release-manifest.json` records the upstream release/tag/commit, build mode, toolchain versions, artifact sizes, and SHA-256 digests. `SHA256SUMS.txt` covers the packaged files and the release manifest.
+`desktop-distribution.json` describes the versioned built-in component set; `desktop-distribution.lock.json` pins each payload file digest. The build adapter stages the declared bundle into the pinned upstream workspace, updates the workspace dependency lock with the pinned pnpm version, and refuses to emit a release manifest unless the bundle is present in the prepared DSH runtime and its payload digests match. `release-manifest.json` records the upstream release/tag/commit, build mode, toolchain versions, component IDs, component lock digest, patched upstream pnpm-lock digest, artifact sizes, and SHA-256 digests. `SHA256SUMS.txt` covers the packaged files and the release manifest.
 
 The manifest currently sets `customDistributionComponentsIncluded: false`: this milestone proves the pinned upstream Windows build and artifact provenance. The next milestone must stage and activate the distribution's built-in plugins/workflows/tools before that flag can become true. User-managed extensions must remain outside immutable application resources and must survive upgrades independently.
 

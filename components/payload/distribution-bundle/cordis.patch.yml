@@ -1,0 +1,3 @@
+- insert:
+    - id: distribution-bundle-tools
+      name: '@thneoly/dsh-distribution-bundle'

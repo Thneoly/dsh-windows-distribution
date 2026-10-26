@@ -18,6 +18,8 @@ jobs:
           node-version: 24.21.0
       - name: Run unit tests
         run: npm test
+      - name: Verify version-locked distribution components
+        run: npm run verify:distribution-lock
       - name: Validate example distribution and payload digests
         run: npm run validate:example
       - name: Validate primary runtime lock fixture
@@ -36,7 +38,18 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: 24.21.0
+      - name: Set up pinned pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.28.5
+          run_install: false
       - name: Checkout pinned DSH release
         run: npm run checkout:upstream -- .build/upstream-dsh
       - name: Verify upstream commit, source blobs, and runtime versions
         run: npm run verify:upstream-checkout -- .build/upstream-dsh
+      - name: Stage locked distribution components
+        run: npm run prepare:distribution-components -- .build/upstream-dsh
+      - name: Regenerate and verify the patched workspace lock
+        run: |
+          pnpm --dir .build/upstream-dsh install --lockfile-only --ignore-scripts
+          pnpm --dir .build/upstream-dsh install --frozen-lockfile --lockfile-only --ignore-scripts
