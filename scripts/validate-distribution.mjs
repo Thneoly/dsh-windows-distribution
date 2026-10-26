@@ -37,8 +37,15 @@ export function validateDistribution(manifest) {
     if (typeof manifest.runtime.primaryRuntimeLockSource !== 'string' || manifest.runtime.primaryRuntimeLockSource.length === 0) {
       errors.push('runtime.primaryRuntimeLockSource must be a non-empty string');
     }
-    if (typeof manifest.runtime.primaryRuntimeLockSha256 !== 'string' || !sha256Pattern.test(manifest.runtime.primaryRuntimeLockSha256)) {
-      errors.push('runtime.primaryRuntimeLockSha256 must be a 64-character SHA-256 hex digest');
+    if (typeof manifest.runtime.upstreamCommit !== 'string' || !/^[a-fA-F0-9]{40}$/.test(manifest.runtime.upstreamCommit)) {
+      errors.push('runtime.upstreamCommit must be a 40-character Git commit SHA');
+    }
+    if (typeof manifest.runtime.primaryRuntimeLockGitBlobSha !== 'string' || !/^[a-fA-F0-9]{40}$/.test(manifest.runtime.primaryRuntimeLockGitBlobSha)) {
+      errors.push('runtime.primaryRuntimeLockGitBlobSha must be a 40-character Git blob SHA');
+    }
+    const expectedLockUrl = 'https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/' + manifest.runtime.upstreamCommit + '/scripts/primary-runtime/lock.json';
+    if (manifest.runtime.primaryRuntimeLockSource !== expectedLockUrl) {
+      errors.push('runtime.primaryRuntimeLockSource must point to the pinned upstream commit');
     }
   }
 
