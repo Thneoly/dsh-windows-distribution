@@ -100,3 +100,19 @@ test('GitHub Windows packaging uses a physical short workspace and copies artifa
   assert.match(windowsWorkflow, /Expected lxml extension path length/);
   assert.doesNotMatch(windowsWorkflow, /\bsubst\s+\$drive/i);
 });
+
+const installedSmokeScript = await readFile(new URL('../scripts/smoke-installed-windows.ps1', import.meta.url), 'utf8');
+
+test('Windows workflow installs the built EXE and validates bundled runtimes before artifact upload', () => {
+  const smokeStep = windowsWorkflow.indexOf('- name: Install unsigned installer and verify bundled runtime');
+  const uploadStep = windowsWorkflow.indexOf('- name: Upload unsigned installer and provenance');
+  assert.ok(smokeStep >= 0 && uploadStep > smokeStep);
+  assert.ok(windowsWorkflow.slice(smokeStep, uploadStep).includes('smoke-installed-windows.ps1'));
+  assert.match(installedSmokeScript, /runtime\\primary-runtime/);
+  assert.match(installedSmokeScript, /dependencies\\node\\bin\\node\.exe/);
+  assert.match(installedSmokeScript, /dependencies\\python\\python\.exe/);
+  assert.match(installedSmokeScript, /dependencies\\pnpm\\bin\\pnpm\.mjs/);
+  assert.match(installedSmokeScript, /import lxml\.etree, docx, openpyxl, pptx/);
+  assert.match(installedSmokeScript, /Get-FileHash/);
+  assert.match(installedSmokeScript, /distributionEligible -ne \$false/);
+});

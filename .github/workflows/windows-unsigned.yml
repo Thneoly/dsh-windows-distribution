@@ -192,6 +192,11 @@ jobs:
           # GitHub PowerShell wrapper does not mistake a successful copy for failure.
           $global:LASTEXITCODE = 0
 
+      - name: Install unsigned installer and verify bundled runtime
+        shell: pwsh
+        run: |
+          & "$env:GITHUB_WORKSPACE\scripts\smoke-installed-windows.ps1" -ArtifactDirectory "$env:GITHUB_WORKSPACE\.build\artifacts\$env:BUILD_VERSION" -BuildVersion "$env:BUILD_VERSION"
+
       - name: Upload unsigned installer and provenance
         uses: actions/upload-artifact@v7
         with:

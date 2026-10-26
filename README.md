@@ -2,7 +2,7 @@
 
 为 [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness) 构建可复现、可验证、可升级的 Windows 发行包。
 
-> 状态：bootstrap / MVP 设计与验证工具开发中。当前仓库不包含 DSH 上游源码，也不宣称已生成可安装的 Setup.exe。
+> 状态：已成功构建固定上游版本的 Windows x64 未签名安装包；自动安装验收、版本化自定义组件集成与正式更新服务仍在推进。当前仓库不包含 DSH 上游源码。
 
 ## 目标
 

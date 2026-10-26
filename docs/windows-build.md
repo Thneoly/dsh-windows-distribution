@@ -63,6 +63,12 @@ Open **Actions → Windows unsigned installer → Run workflow**. Select `build-
 
 The unsigned installer and provenance files are uploaded as a workflow artifact for 14 days. The workflow does not sign, publish a GitHub Release, or upload to a download service.
 
+## Automated post-install smoke test
+
+Before uploading the workflow artifact, the Windows runner silently installs the generated EXE into a unique temporary directory and verifies the installed payload rather than only inspecting the unpacked build directory. It checks the installer and manifest SHA-256 values, the installed Electron shell and ASAR, the DSH runtime descriptor and version, the standalone Node.js/Python/pnpm executables, and the Office conversion CLI. It invokes the packaged Node and Python executables by absolute path, checks their pinned versions, and imports `lxml.etree`, `python-docx`, `openpyxl`, and `python-pptx` using the packaged Python. The temporary installation is removed after the checks.
+
+This smoke test runs on the Windows packaging runner, which itself has build tools installed. It proves the installed payload contains executable bundled runtimes; it does **not** replace a clean-VM test with system Node.js/Python/pnpm absent, nor does it test login or automatic updates.
+
 ## Output and verification
 
 Output is written to:
