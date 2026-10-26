@@ -94,7 +94,7 @@ export async function verifyBundledDistributionComponents(upstreamDirectory, dis
   const packageRoot = path.join(runtimeRoot, 'node_modules', '@thneoly', 'dsh-distribution-bundle');
   const packageManifestPath = path.join(packageRoot, 'package.json');
   const runtimePackagePath = path.join(runtimeRoot, 'package.json');
-  const compiledProfilePath = path.join(runtimeRoot, 'node_modules', '@deepseek-ai', 'dsh-app-boot', 'lib', 'profile.js');
+  const compiledProfilePath = path.join(runtimeRoot, 'node_modules', '@deepseek-ai', 'dsh-app-boot', 'lib', 'index.js');
 
   const packageManifest = JSON.parse(await readFile(packageManifestPath, 'utf8'));
   if (packageManifest.name !== distribution.bundleName || packageManifest.version !== distribution.bundleVersion) {
