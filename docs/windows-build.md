@@ -57,6 +57,8 @@ The script checks out the exact tag from `upstream.lock.json`, verifies the sour
 
 ## Build from GitHub Actions
 
+The Windows workflow maps the repository workspace to a temporary short drive (`R:`) while packaging. On the hosted runner, the full nested path to the bundled `lxml` extension can reach roughly 253 characters before Windows loads its native DLL dependencies. The short drive keeps the same physical workspace and artifact location but reduces that path to about 201 characters. The workflow prints and checks this expected path length before building; it does not skip the Office-conversion smoke test.
+
 Open **Actions → Windows unsigned installer → Run workflow**. Select `build-only` (the default) when the application services are not ready; it requires no service URLs and produces a clearly marked non-distributable artifact. Select `configured-test` only when the actual download origin, mandatory-update origin, and approved login origin are available. The workflow generates a unique SemVer build version from the pinned DSH release, UTC date, workflow run number, and attempt.
 
 The unsigned installer and provenance files are uploaded as a workflow artifact for 14 days. The workflow does not sign, publish a GitHub Release, or upload to a download service.
