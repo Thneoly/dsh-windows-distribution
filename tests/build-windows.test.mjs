@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import {
   createBuildManifest,
+  createBuildOnlyConfig,
   createUnsignedBuildArgs,
   createUnsignedPreflightArgs,
   parseInstallerVersion,
@@ -50,4 +51,28 @@ test('build forwards the exact version through pnpm script argument separator', 
     '--dir', 'apps/desktop', 'run', 'package:win:x64:unsigned', '--',
     '--build-version', '0.2.1-rc.3.20261026.40.1'
   ]);
+});
+
+test('build-only config uses only reserved invalid origins and valid line delimiters', () => {
+  const config = createBuildOnlyConfig('b'.repeat(32));
+  assert.match(config, /DOWNLOAD_TEST_ORIGIN=https:\/\/dsh-build-only\.invalid/);
+  assert.match(config, /DSH_DESKTOP_MANDATORY_UPDATE_TEST_ORIGIN=https:\/\/dsh-mandatory-update-build-only\.invalid/);
+  assert.match(config, /https:\/\/dsh-login-build-only\.invalid/);
+  assert.equal(config.includes('\\\\n'), false);
+  assert.equal(config.split('\\n').length, 7);
+  assert.throws(() => createBuildOnlyConfig('not-a-release-id'), /32 lowercase hexadecimal/);
+});
+
+test('build-only manifest clearly marks the artifact as non-distributable and unconfigured', () => {
+  const manifest = createBuildManifest({
+    pin,
+    buildVersion: '0.2.1-rc.3.20261026.40.1',
+    artifacts: [{ file: 'installer.exe', sizeBytes: 10, sha256: 'b'.repeat(64) }],
+    builtAt: '2026-10-26T00:00:00.000Z',
+    profile: 'build-only'
+  });
+  assert.equal(manifest.buildMode, 'unsigned-build-only');
+  assert.equal(manifest.distributionProfile, 'build-only');
+  assert.equal(manifest.networkServicesConfigured, false);
+  assert.equal(manifest.distributionEligible, false);
 });
