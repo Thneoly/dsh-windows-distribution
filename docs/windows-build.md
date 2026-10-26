@@ -1,0 +1,69 @@
+# Windows unsigned installer build
+
+This pipeline builds the pinned upstream DSH Desktop on a Windows x64 build host. It produces an **unsigned test installer**, not a production-signed release.
+
+## Pinned build host
+
+- Node.js: `24.21.0`
+- Python: `3.12.14`
+- pnpm: `11.28.5`
+- Git and the Windows C++/SDK toolchain required by Electron and native dependencies
+
+The script fails when the host Node.js, Python, or pnpm version differs from `upstream.lock.json`. The installed target computer does not need Node.js, Python, or pnpm.
+
+## Configure a test build
+
+The upstream Desktop requires real HTTPS origins for its test download service and mandatory-update policy, including for unsigned builds. Do not use placeholders such as `example.com` for an installer you intend to launch.
+
+1. Run the build command once. If `config/windows.env` is missing, the script copies the pinned upstream `.env.windows.example` to `config/windows.env.example` and exits without building.
+2. Copy `config/windows.env.example` to `config/windows.env`.
+3. Fill in `DOWNLOAD_TEST_ORIGIN` and `DSH_DESKTOP_MANDATORY_UPDATE_TEST_ORIGIN` with actual HTTPS origins (no path, query, or fragment).
+4. Set `DSH_DESKTOP_MANDATORY_UPDATE_CONFIG` with the approved HTTPS login origin(s) for the test policy.
+5. Set `DOWNLOAD_TEST_RELEASE_ID` to 32 lowercase hexadecimal characters. Reuse the same ID when testing upgrades across versions; use a new ID for an isolated test batch.
+
+The config file is ignored by Git and is never copied into the artifact bundle. Unsigned packaging does not need EV signing credentials or upload credentials.
+
+## Build locally on Windows x64
+
+From the repository root:
+
+```powershell
+node --version
+python --version
+pnpm --version
+
+npm run build:windows -- --config config/windows.env --check
+npm run build:windows -- --config config/windows.env --build-version auto
+```
+
+The first command checks the upstream config and toolchain after installing dependencies. The second builds the unsigned NSIS installer, runs the upstream packaged-runtime smoke test, and creates a local artifact bundle.
+
+The script checks out the exact tag from `upstream.lock.json`, verifies the source commit and pinned Git blob identities, installs dependencies with `pnpm install --frozen-lockfile`, and calls the upstream `package:win:x64:unsigned` target.
+
+## Build from GitHub Actions
+
+Open **Actions → Windows unsigned installer → Run workflow**. Provide the actual download origin, mandatory-update origin, and approved login origin. The workflow generates a unique SemVer build version from the pinned DSH release, UTC date, workflow run number, and attempt.
+
+The unsigned installer and provenance files are uploaded as a workflow artifact for 14 days. The workflow does not sign, publish a GitHub Release, or upload to a download service.
+
+## Output and verification
+
+Output is written to:
+
+```text
+.build/artifacts/<build-version>/
+  deepseek-harness-<build-version>-win-x64-unsigned.exe
+  release-manifest.json
+  SHA256SUMS.txt
+```
+
+`release-manifest.json` records the upstream release/tag/commit, build mode, toolchain versions, artifact sizes, and SHA-256 digests. `SHA256SUMS.txt` covers the packaged files and the release manifest.
+
+The manifest currently sets `customDistributionComponentsIncluded: false`: this milestone proves the pinned upstream Windows build and artifact provenance. The next milestone must stage and activate the distribution's built-in plugins/workflows/tools before that flag can become true. User-managed extensions must remain outside immutable application resources and must survive upgrades independently.
+
+## Limitations
+
+- This is an unsigned test installer. Windows SmartScreen may warn; do not treat it as a production release.
+- Actual HTTPS origins must be supplied by the operator; the project does not invent or provision an update/download service.
+- A successful build is not a substitute for installing and testing the EXE on a clean Windows x64 VM.
+- Built-in custom component integration and end-user extension migration tests are not yet implemented.
