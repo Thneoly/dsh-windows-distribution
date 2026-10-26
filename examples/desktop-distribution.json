@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "product": "deepseek-harness",
+  "releaseVersion": "0.0.0-example",
+  "target": {
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "runtime": {
+    "dshVersion": "0.2.1-rc.3",
+    "upstreamCommit": "1f81c047fc48fa190a683e469daa699857e9afe8",
+    "electronVersion": "44.7.0",
+    "primaryNodeVersion": "24.21.0",
+    "pythonVersion": "3.12.14",
+    "pnpmVersion": "11.28.5",
+    "primaryRuntimeLockSource": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/1f81c047fc48fa190a683e469daa699857e9afe8/scripts/primary-runtime/lock.json",
+    "primaryRuntimeLockGitBlobSha": "f5b0ada48aae040fe505aeaf462cb0aa6371a69c"
+  },
+  "components": [
+    {
+      "id": "org.example.git-tools",
+      "kind": "plugin",
+      "version": "1.0.0",
+      "required": true,
+      "requires": [],
+      "files": [
+        {
+          "path": "plugins/git-tools.json",
+          "sha256": "077def6d48168efeae296d75f4577d0b0cc68cf290eda2e61c64d24eb2ae24f8"
+        }
+      ]
+    },
+    {
+      "id": "workflow.code-review",
+      "kind": "workflow",
+      "version": "1.0.0",
+      "required": true,
+      "requires": [
+        "org.example.git-tools"
+      ],
+      "files": [
+        {
+          "path": "workflows/code-review.yaml",
+          "sha256": "4aa7a36285c51cd4da8cec0a2fe67f7d430887ba5c78a186695a87a02b2fa85e"
+        }
+      ]
+    },
+    {
+      "id": "tool.git-status",
+      "kind": "tool",
+      "version": "1.0.0",
+      "required": false,
+      "requires": [],
+      "files": [
+        {
+          "path": "tools/git-status/tool.json",
+          "sha256": "1d4ab8a737ef7ccbd84d53b35732a3dbbe4fb31e7b2d6cef9e129431bcd93c0a"
+        }
+      ]
+    }
+  ]
+}

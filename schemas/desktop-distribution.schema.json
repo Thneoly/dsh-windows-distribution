@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://thneoly.github.io/dsh-windows-distribution/schemas/desktop-distribution.schema.json",
+  "title": "DSH Desktop Distribution Manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "product",
+    "releaseVersion",
+    "target",
+    "runtime",
+    "components"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "product": {
+      "const": "deepseek-harness"
+    },
+    "releaseVersion": {
+      "type": "string",
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "platform",
+        "arch"
+      ],
+      "properties": {
+        "platform": {
+          "const": "win32"
+        },
+        "arch": {
+          "const": "x64"
+        }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dshVersion",
+        "upstreamCommit",
+        "electronVersion",
+        "primaryNodeVersion",
+        "pythonVersion",
+        "pnpmVersion",
+        "primaryRuntimeLockSource",
+        "primaryRuntimeLockGitBlobSha"
+      ],
+      "properties": {
+        "dshVersion": {
+          "type": "string"
+        },
+        "electronVersion": {
+          "type": "string"
+        },
+        "primaryNodeVersion": {
+          "type": "string"
+        },
+        "pythonVersion": {
+          "type": "string"
+        },
+        "pnpmVersion": {
+          "type": "string"
+        },
+        "primaryRuntimeLockSource": {
+          "type": "string",
+          "minLength": 1
+        },
+        "upstreamCommit": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{40}$"
+        },
+        "primaryRuntimeLockGitBlobSha": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{40}$"
+        }
+      }
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "kind",
+          "version",
+          "required",
+          "requires",
+          "files"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9._-]*$"
+          },
+          "kind": {
+            "enum": [
+              "plugin",
+              "workflow",
+              "tool"
+            ]
+          },
+          "version": {
+            "type": "string"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "requires": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string"
+            }
+          },
+          "files": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "path",
+                "sha256"
+              ],
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "sha256": {
+                  "type": "string",
+                  "pattern": "^[a-fA-F0-9]{64}$"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "feat/**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.21.0
+      - name: Run unit tests
+        run: npm test
+      - name: Validate example distribution and payload digests
+        run: npm run validate:example
+      - name: Validate primary runtime lock fixture
+        run: npm run validate:runtime-lock:fixture
+      - name: Validate pinned upstream release
+        run: npm run validate:upstream-pin
