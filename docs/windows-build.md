@@ -5,11 +5,11 @@ This pipeline builds the pinned upstream DSH Desktop on a Windows x64 build host
 ## Pinned build host
 
 - Node.js: `24.21.0`
-- Python: `3.12.14`
+- Python (build host): `3.12.10`
 - pnpm: `11.28.5`
 - Git and the Windows C++/SDK toolchain required by Electron and native dependencies
 
-The script fails when the host Node.js, Python, or pnpm version differs from `upstream.lock.json`. The installed target computer does not need Node.js, Python, or pnpm.
+The script checks the exact Windows build-host versions in `upstream.lock.json` → `buildHostToolchain`. The upstream `toolchain` block records the separate packaged runtime: its standalone Python remains `3.12.14`; that upstream runtime is built/downloaded separately and is not the Python interpreter installed on the Windows packaging host. The installed target computer does not need Node.js, Python, or pnpm.
 
 ## Build without application backend services
 
@@ -51,7 +51,7 @@ npm run build:windows -- --profile configured-test --config config/windows.env -
 npm run build:windows -- --profile configured-test --config config/windows.env --build-version auto
 ```
 
-The first command checks the upstream config and toolchain after installing dependencies. The second builds the unsigned NSIS installer, runs the upstream packaged-runtime smoke test, and creates a local artifact bundle.
+The first command checks the upstream config and the exact build-host toolchain after installing dependencies. The second builds the unsigned NSIS installer, runs the upstream packaged-runtime smoke test, and creates a local artifact bundle.
 
 The script checks out the exact tag from `upstream.lock.json`, verifies the source commit and pinned Git blob identities, installs dependencies with `pnpm install --frozen-lockfile`, and calls the upstream `package:win:x64:unsigned` target.
 

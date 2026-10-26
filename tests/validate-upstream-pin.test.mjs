@@ -26,3 +26,17 @@ test('tag and version mismatch is rejected', () => {
   copy.release.tag = 'dsh-v0.2.1';
   assert.ok(validateUpstreamPin(copy).some((error) => error.includes('release.tag must match')));
 });
+
+test('build host toolchain is pinned separately from the upstream runtime', () => {
+  assert.equal(pin.toolchain.pythonVersion, '3.12.14');
+  assert.equal(pin.buildHostToolchain.pythonVersion, '3.12.10');
+  const copy = structuredClone(pin);
+  copy.buildHostToolchain.pythonVersion = '3.12';
+  assert.ok(validateUpstreamPin(copy).some((error) => error.includes('buildHostToolchain.pythonVersion must be an exact version')));
+});
+
+test('missing build host toolchain is rejected', () => {
+  const copy = structuredClone(pin);
+  delete copy.buildHostToolchain;
+  assert.ok(validateUpstreamPin(copy).some((error) => error.includes('buildHostToolchain must be an object')));
+});

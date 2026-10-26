@@ -50,17 +50,18 @@ jobs:
     timeout-minutes: 120
     steps:
       - name: Checkout distribution tooling
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up pinned Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 24.21.0
 
       - name: Set up pinned Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
-          python-version: 3.12.14
+          python-version: '3.12.10'
+          architecture: x64
 
       - name: Install pinned pnpm
         run: npm install --global pnpm@11.28.5
@@ -147,7 +148,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Upload unsigned installer and provenance
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: dsh-windows-${{ inputs.build_profile }}-unsigned-${{ github.run_id }}-${{ github.run_attempt }}
           path: .build/artifacts/**
