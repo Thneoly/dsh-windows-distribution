@@ -53,6 +53,32 @@ test('build manifest records the pinned source and unsigned mode', () => {
   assert.equal(manifest.artifacts[0].sha256, 'a'.repeat(64));
 });
 
+test('build manifest records component lock provenance only after runtime verification', () => {
+  const distributionComponents = {
+    included: true,
+    payloadVerified: true,
+    lockSha256: 'c'.repeat(64),
+    patchedPnpmLockSha256: 'd'.repeat(64),
+    componentIds: ['org.thneoly.distribution-bundle', 'workflow.distribution-smoke', 'tool.distribution-bundle-info'],
+    bundleName: '@thneoly/dsh-distribution-bundle',
+    bundleVersion: '1.0.0',
+    payloadFileCount: 7
+  };
+  const manifest = createBuildManifest({
+    pin,
+    buildVersion: '0.2.1-rc.3.20261026.2.1',
+    artifacts: [],
+    builtAt: '2026-10-26T00:00:00.000Z',
+    distributionComponents
+  });
+  assert.equal(manifest.customDistributionComponentsIncluded, true);
+  assert.equal(manifest.distributionComponentsLockSha256, 'c'.repeat(64));
+  assert.equal(manifest.distributionPatchedPnpmLockSha256, 'd'.repeat(64));
+  assert.equal(manifest.distributionBundle.name, '@thneoly/dsh-distribution-bundle');
+  assert.equal(manifest.distributionBundle.version, '1.0.0');
+  assert.equal(manifest.distributionBundle.payloadFileCount, 7);
+});
+
 test('preflight runs the exact upstream unsigned package target', () => {
   assert.deepEqual(createUnsignedPreflightArgs(), [
     '--dir', 'apps/desktop', 'run', 'package:win:x64:unsigned', '--', '--check'
