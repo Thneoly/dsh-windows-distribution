@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "repository": "deepseek-ai/deepseek-harness",
   "release": {
     "version": "0.2.1-rc.3",
@@ -25,10 +25,16 @@
     "pnpmVersion": "11.28.5",
     "electronVersion": "44.7.0"
   },
+  "buildHostToolchain": {
+    "nodeVersion": "24.21.0",
+    "pythonVersion": "3.12.10",
+    "pnpmVersion": "11.28.5"
+  },
   "notes": [
     "Latest published GitHub Release verified on 2026-10-26; this is a prerelease, not a stable release.",
     "The release tag resolves to the immutable source commit above. Builds must check out this exact commit, never a floating branch.",
     "Electron is pinned to 44.7.0 by the release's pnpm-workspace.yaml fingerprint and pnpm lockfile. Inspect the packaged binary to record its embedded Node.js version.",
-    "The standalone primary runtime Node.js is 24.21.0 and is distinct from Electron's embedded Node.js runtime."
+    "The standalone primary runtime Node.js is 24.21.0 and Python is 3.12.14; both are pinned upstream runtimes and are distinct from the Windows build host's installed Python.",
+    "The Windows build host is separately pinned in buildHostToolchain. Python 3.12.10 is used on the host because actions/python-versions publishes a Windows x64 build for 3.12.10 but not 3.12.14."
   ]
 }
