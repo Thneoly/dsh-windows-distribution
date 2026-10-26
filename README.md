@@ -37,6 +37,7 @@
 ## 开发环境
 
 - Node.js 24.21.0（项目开发工具链基线；与发行包中 Electron 自带的 Node.js 是不同概念）。
+- Python 3.12.10（Windows 构建主机工具链；发行包中的独立 Python 仍按上游锁定为 3.12.14）。
 - pnpm 11.28.5（如需使用 pnpm）。
 - Windows x64 的真实安装包验收应在干净 Windows 虚拟机中进行。
 
