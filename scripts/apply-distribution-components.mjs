@@ -6,7 +6,6 @@ import { verifyDistributionLock } from './lock-distribution.mjs';
 
 const PROJECT_ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const BUNDLE_NAME = '@thneoly/dsh-distribution-bundle';
-const WORKSPACE_GLOB = '  - packages/*/*';
 
 function sha256(bytes) {
   return createHash('sha256').update(bytes).digest('hex');
