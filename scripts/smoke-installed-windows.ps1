@@ -66,17 +66,19 @@ try {
     $appExecutable = Join-Path $installDirectory 'DeepSeek Harness.exe'
     $resources = Join-Path $installDirectory 'resources'
     $appArchive = Join-Path $resources 'app.asar'
-    $dshUnpackedModules = Join-Path $resources 'app.asar.unpacked\dsh\node_modules'
+    $dshRoot = Join-Path $resources 'dsh'
+    $dshPackagePath = Join-Path $dshRoot 'package.json'
+    $dshRuntimeDescriptor = Join-Path $dshRoot 'runtime.json'
     $primaryRuntime = Join-Path $resources 'runtime\primary-runtime'
     $primaryRuntimeDescriptor = Join-Path $primaryRuntime 'runtime.json'
     $nodePath = Join-Path $primaryRuntime 'dependencies\node\bin\node.exe'
     $pythonPath = Join-Path $primaryRuntime 'dependencies\python\python.exe'
     $pnpmPath = Join-Path $primaryRuntime 'dependencies\pnpm\bin\pnpm.mjs'
-    $officeCliPath = Join-Path $dshUnpackedModules '@deepseek-ai\libreoffice-kit\lib\cli.js'
+    $officeCliPath = Join-Path $dshRoot 'node_modules\@deepseek-ai\libreoffice-kit\lib\cli.js'
 
     $requiredPaths = @(
-        $appExecutable, $appArchive, $primaryRuntimeDescriptor,
-        $nodePath, $pythonPath, $pnpmPath, $officeCliPath
+        $appExecutable, $appArchive, $dshPackagePath, $dshRuntimeDescriptor,
+        $primaryRuntimeDescriptor, $nodePath, $pythonPath, $pnpmPath, $officeCliPath
     )
     foreach ($requiredPath in $requiredPaths) {
         if (-not (Test-Path -LiteralPath $requiredPath -PathType Leaf)) {
@@ -84,6 +86,11 @@ try {
         }
     }
 
+    $dshPackage = Get-Content -LiteralPath $dshPackagePath -Raw | ConvertFrom-Json
+    if ($dshPackage.version -ne $pin.release.version) {
+        throw "Installed DSH runtime version mismatch: expected $($pin.release.version), found $($dshPackage.version)"
+    }
+    $null = Get-Content -LiteralPath $dshRuntimeDescriptor -Raw | ConvertFrom-Json
     if ($manifest.releaseVersion -ne $pin.release.version -or $manifest.upstreamCommit -ne $pin.commit) {
         throw 'Release provenance does not match the pinned DSH source.'
     }
@@ -113,7 +120,7 @@ try {
     }
 
     Write-Host 'PASS: unsigned installer installed successfully.'
-    Write-Host "PASS: release provenance matches pinned DSH $($pin.release.version)."
+    Write-Host "PASS: installed DSH runtime and release provenance match pinned DSH $($pin.release.version)."
     Write-Host "PASS: bundled Node.js $nodeVersion; Python $pythonVersion; pnpm $pnpmVersion."
     Write-Host "PASS: bundled Python can import lxml.etree, python-docx, openpyxl, and python-pptx."
     Write-Host "PASS: installed app, runtime descriptors, and Office conversion CLI are present."
