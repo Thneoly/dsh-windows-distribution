@@ -61,7 +61,7 @@ export async function applyDistributionComponents(upstreamDirectory) {
 
   const workspacePath = path.join(upstreamRoot, 'pnpm-workspace.yaml');
   const workspace = await readFile(workspacePath, 'utf8');
-  if (!workspace.split(/\r?\n/).includes(WORKSPACE_GLOB.trim())) {
+  if (!workspace.split(/\r?\n/).some((line) => line.trim() === '- packages/*/*')) {
     throw new Error('pinned upstream workspace no longer includes packages/*/*');
   }
 
