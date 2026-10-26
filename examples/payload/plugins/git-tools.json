@@ -1,0 +1,6 @@
+{
+  "id": "org.example.git-tools",
+  "version": "1.0.0",
+  "kind": "mcp-server",
+  "entrypoint": "bin/git-tools.exe"
+}

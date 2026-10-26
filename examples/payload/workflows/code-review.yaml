@@ -1,0 +1,5 @@
+id: workflow.code-review
+version: 1.0.0
+steps:
+  - id: inspect
+    tool: git.status

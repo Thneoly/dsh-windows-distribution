@@ -1,0 +1,15 @@
+{
+  "name": "dsh-windows-distribution",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Reproducible Windows distribution tooling for DeepSeek Harness",
+  "engines": {
+    "node": "24.21.x"
+  },
+  "scripts": {
+    "test": "node --test",
+    "validate:example": "node scripts/validate-distribution.mjs examples/desktop-distribution.json --root examples/payload",
+    "validate:runtime-lock:fixture": "node scripts/verify-runtime-lock.mjs fixtures/primary-runtime-lock.minimal.json"
+  }
+}

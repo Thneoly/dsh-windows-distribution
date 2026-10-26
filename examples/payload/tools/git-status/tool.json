@@ -1,0 +1,6 @@
+{
+  "id": "git.status",
+  "version": "1.0.0",
+  "runtime": "native-win-x64",
+  "entrypoint": "bin/git-status.exe"
+}
