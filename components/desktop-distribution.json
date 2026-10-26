@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "product": "deepseek-harness",
+  "releaseVersion": "1.0.0",
+  "target": {
+    "platform": "win32",
+    "arch": "x64"
+  },
+  "runtime": {
+    "dshVersion": "0.2.1-rc.3",
+    "upstreamCommit": "1f81c047fc48fa190a683e469daa699857e9afe8",
+    "electronVersion": "44.7.0",
+    "primaryNodeVersion": "24.21.0",
+    "pythonVersion": "3.12.14",
+    "pnpmVersion": "11.28.5",
+    "primaryRuntimeLockSource": "https://raw.githubusercontent.com/deepseek-ai/deepseek-harness/1f81c047fc48fa190a683e469daa699857e9afe8/scripts/primary-runtime/lock.json",
+    "primaryRuntimeLockGitBlobSha": "f5b0ada48aae040fe505aeaf462cb0aa6371a69c"
+  },
+  "components": [
+    {
+      "id": "org.thneoly.distribution-bundle",
+      "kind": "plugin",
+      "version": "1.0.0",
+      "required": true,
+      "requires": [],
+      "files": [
+        { "path": "distribution-bundle/package.json" },
+        { "path": "distribution-bundle/lib/index.js" },
+        { "path": "distribution-bundle/cordis.patch.yml" },
+        { "path": "distribution-bundle/icon.svg" },
+        { "path": "distribution-bundle/locale/en.json" },
+        { "path": "distribution-bundle/locale/zh.json" }
+      ]
+    },
+    {
+      "id": "workflow.distribution-smoke",
+      "kind": "workflow",
+      "version": "1.0.0",
+      "required": true,
+      "requires": ["org.thneoly.distribution-bundle"],
+      "files": [
+        { "path": "distribution-bundle/workflows/distribution-smoke.md" }
+      ]
+    },
+    {
+      "id": "tool.distribution-bundle-info",
+      "kind": "tool",
+      "version": "1.0.0",
+      "required": true,
+      "requires": ["org.thneoly.distribution-bundle"],
+      "files": [
+        { "path": "distribution-bundle/lib/index.js" }
+      ]
+    },
+    {
+      "id": "tool.distribution-workflow-read",
+      "kind": "tool",
+      "version": "1.0.0",
+      "required": true,
+      "requires": ["org.thneoly.distribution-bundle", "workflow.distribution-smoke"],
+      "files": [
+        { "path": "distribution-bundle/lib/index.js" }
+      ]
+    }
+  ]
+}
