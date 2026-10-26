@@ -53,6 +53,7 @@ export function createBuildManifest({ pin, buildVersion, artifacts, builtAt = ne
     distributionEligible: false,
     buildVersion,
     toolchain: pin.toolchain,
+    buildHostToolchain: pin.buildHostToolchain,
     customDistributionComponentsIncluded: false,
     builtAt,
     artifacts
@@ -119,20 +120,24 @@ async function assertHostToolchain(pin) {
   if (process.platform !== 'win32' || process.arch !== 'x64') {
     throw new Error('Windows installer builds require a Windows x64 host');
   }
-  if (process.versions.node !== pin.toolchain.nodeVersion) {
-    throw new Error('build host Node.js must be ' + pin.toolchain.nodeVersion + ', found ' + process.versions.node);
+  const host = pin.buildHostToolchain;
+  if (!host) throw new Error('upstream.lock.json must define buildHostToolchain');
+
+  if (process.versions.node !== host.nodeVersion) {
+    throw new Error('build host Node.js must be ' + host.nodeVersion + ', found ' + process.versions.node);
   }
 
   const pnpmCommand = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
   const pnpmVersion = await readCommandVersion(pnpmCommand, ['--version']);
-  if (pnpmVersion !== pin.toolchain.pnpmVersion) {
-    throw new Error('build host pnpm must be ' + pin.toolchain.pnpmVersion + ', found ' + pnpmVersion);
+  if (pnpmVersion !== host.pnpmVersion) {
+    throw new Error('build host pnpm must be ' + host.pnpmVersion + ', found ' + pnpmVersion);
   }
 
   const pythonCommand = process.env.PYTHON || 'python';
   const pythonVersion = await readCommandVersion(pythonCommand, ['--version']);
-  if (!pythonVersion.includes(pin.toolchain.pythonVersion)) {
-    throw new Error('build host Python must be ' + pin.toolchain.pythonVersion + ', found ' + pythonVersion);
+  const pythonMatch = /^Python\\s+(\\d+\\.\\d+\\.\\d+)$/u.exec(pythonVersion);
+  if (!pythonMatch || pythonMatch[1] !== host.pythonVersion) {
+    throw new Error('build host Python must be ' + host.pythonVersion + ', found ' + pythonVersion);
   }
 
   const gitVersion = await readCommandVersion('git', ['--version']);
