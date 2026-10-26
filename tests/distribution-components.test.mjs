@@ -2,11 +2,12 @@ import assert from 'node:assert/strict';
 import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import { applyDistributionComponents, verifyBundledDistributionComponents } from '../scripts/apply-distribution-components.mjs';
 import { verifyDistributionLock } from '../scripts/lock-distribution.mjs';
 
-const projectRoot = path.resolve(new URL('..', import.meta.url).pathname);
+const projectRoot = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 const payloadRoot = path.join(projectRoot, 'components', 'payload');
 
 test('checked-in distribution lock matches declaration, runtime pin, and every payload digest', async () => {
