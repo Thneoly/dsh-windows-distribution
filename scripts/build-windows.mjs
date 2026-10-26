@@ -155,7 +155,7 @@ async function resolveConfig(configArgument, upstreamRoot, profile) {
         'DSH_DESKTOP_MANDATORY_UPDATE_TEST_ORIGIN=https://dsh-mandatory-update-build-only.invalid',
         `DSH_DESKTOP_MANDATORY_UPDATE_CONFIG='{"allowedAuthOrigins":["https://dsh-login-build-only.invalid"]}'`,
         ''
-      ].join('\\n');
+      ].join('\n');
       await writeFile(configPath, buildOnlyConfig, { encoding: 'utf8', flag: 'wx' });
       console.warn('Generated local build-only config with reserved .invalid endpoints. Login and updates are intentionally unavailable; do not distribute this installer.');
       return configPath;
