@@ -133,28 +133,36 @@ jobs:
           Set-Content -LiteralPath 'config/windows.env' -Value $configLines -Encoding utf8NoBOM
           Write-Host 'Created configured-test packaging configuration; the file will not be uploaded.'
 
-      - name: Build Windows installer from a short workspace path
+      - name: Build Windows installer from a physical short workspace
         shell: pwsh
         run: |
-          # The nested unpacked runtime path can approach Windows MAX_PATH. Run the
-          # whole build through a temporary drive alias so native DLL loading uses
-          # short paths, while artifacts remain in the same workspace on disk.
-          $drive = 'R:'
-          if (Test-Path -LiteralPath "$drive\") {
-            throw "Short-path drive $drive is already in use."
+          # SUBST only changes the visible drive letter; Node/Electron tooling can
+          # canonicalize it back to the original long GITHUB_WORKSPACE path. Copy
+          # the source tree to a genuinely short physical path before building.
+          $shortRoot = 'C:\w'
+          if (Test-Path -LiteralPath $shortRoot) {
+            throw "Short physical workspace $shortRoot already exists."
           }
-          subst $drive "$env:GITHUB_WORKSPACE"
-          if ($LASTEXITCODE -ne 0) {
-            throw "Unable to map $env:GITHUB_WORKSPACE to $drive."
+
+          robocopy "$env:GITHUB_WORKSPACE" $shortRoot /E /COPY:DAT /DCOPY:DAT /R:2 /W:1 /XD .git .build node_modules
+          $copyExitCode = $LASTEXITCODE
+          if ($copyExitCode -ge 8) {
+            throw "Failed to copy the source tree to $shortRoot (robocopy exit code $copyExitCode)."
           }
 
           $buildExitCode = 0
           try {
-            Set-Location -LiteralPath "$drive\"
-            $probePath = Join-Path "$drive\" '.build\upstream-dsh\apps\desktop\.desktop-build\targets\win-x64\unsigned-artifacts\win-unpacked\resources\runtime\primary-runtime\dependencies\python\Lib\site-packages\lxml\etree.cp312-win_amd64.pyd'
-            Write-Host ("Expected lxml extension path length via {0}: {1}" -f $drive, $probePath.Length)
+            Set-Location -LiteralPath $shortRoot
+            $resolvedRoot = (node -p "process.cwd()").Trim()
+            Write-Host "Physical build workspace: $resolvedRoot"
+            if ($resolvedRoot -ne $shortRoot) {
+              throw "Build process did not enter the physical short workspace: $resolvedRoot"
+            }
+
+            $probePath = Join-Path "$shortRoot\" '.build\upstream-dsh\apps\desktop\.desktop-build\targets\win-x64\unsigned-artifacts\win-unpacked\resources\runtime\primary-runtime\dependencies\python\Lib\site-packages\lxml\etree.cp312-win_amd64.pyd'
+            Write-Host ("Expected lxml extension path length: {0}" -f $probePath.Length)
             if ($probePath.Length -ge 240) {
-              throw "Short workspace path is still too long ($($probePath.Length) characters)."
+              throw "Physical short workspace path is still too long ($($probePath.Length) characters)."
             }
 
             if ($env:BUILD_PROFILE -eq 'build-only') {
@@ -165,10 +173,24 @@ jobs:
             $buildExitCode = $LASTEXITCODE
           } finally {
             Set-Location -LiteralPath $env:GITHUB_WORKSPACE
-            subst $drive /d
           }
 
           if ($buildExitCode -ne 0) { exit $buildExitCode }
+
+          $sourceArtifacts = Join-Path $shortRoot '.build\artifacts'
+          $destinationArtifacts = Join-Path $env:GITHUB_WORKSPACE '.build\artifacts'
+          if (-not (Test-Path -LiteralPath $sourceArtifacts)) {
+            throw "Build succeeded but artifact directory is missing: $sourceArtifacts"
+          }
+          New-Item -ItemType Directory -Force -Path $destinationArtifacts | Out-Null
+          robocopy $sourceArtifacts $destinationArtifacts /E /COPY:DAT /DCOPY:DAT /R:2 /W:1
+          $artifactCopyExitCode = $LASTEXITCODE
+          if ($artifactCopyExitCode -ge 8) {
+            throw "Failed to copy installer artifacts back to the GitHub workspace (robocopy exit code $artifactCopyExitCode)."
+          }
+          # Robocopy uses exit codes 0-7 for success; normalize its code so the
+          # GitHub PowerShell wrapper does not mistake a successful copy for failure.
+          $global:LASTEXITCODE = 0
 
       - name: Upload unsigned installer and provenance
         uses: actions/upload-artifact@v7

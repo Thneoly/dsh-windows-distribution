@@ -57,7 +57,7 @@ The script checks out the exact tag from `upstream.lock.json`, verifies the sour
 
 ## Build from GitHub Actions
 
-The Windows workflow maps the repository workspace to a temporary short drive (`R:`) while packaging. On the hosted runner, the full nested path to the bundled `lxml` extension can reach roughly 253 characters before Windows loads its native DLL dependencies. The short drive keeps the same physical workspace and artifact location but reduces that path to about 201 characters. The workflow prints and checks this expected path length before building; it does not skip the Office-conversion smoke test.
+The Windows workflow copies the checked-out source to the genuinely short physical path `C:\w` before packaging. The previous `SUBST`-drive approach did not work: Node/Electron tooling canonicalized the alias back to the original `D:\a\...` workspace, so the `lxml` DLL load still failed. A physical copy keeps the build process rooted at `C:\w`; the workflow prints the actual Node working directory, checks the expected `lxml` extension path is below 240 characters, and copies successful artifacts back to the original GitHub workspace for upload. The Office-conversion smoke test remains enabled.
 
 Open **Actions → Windows unsigned installer → Run workflow**. Select `build-only` (the default) when the application services are not ready; it requires no service URLs and produces a clearly marked non-distributable artifact. Select `configured-test` only when the actual download origin, mandatory-update origin, and approved login origin are available. The workflow generates a unique SemVer build version from the pinned DSH release, UTC date, workflow run number, and attempt.
 
