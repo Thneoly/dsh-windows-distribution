@@ -139,3 +139,21 @@ export async function verifyBundledDistributionComponents(upstreamDirectory, dis
     runtimeRoot,
   };
 }
+
+async function main() {
+  const upstreamDirectory = process.argv[2];
+  if (!upstreamDirectory) {
+    throw new Error('Usage: node scripts/apply-distribution-components.mjs <verified-upstream-directory>');
+  }
+  const result = await applyDistributionComponents(upstreamDirectory);
+  console.log('Staged ' + result.bundleName + '@' + result.bundleVersion
+    + ' (' + result.payloadFileCount + ' locked payload files).');
+  console.log('Distribution lock SHA-256: ' + result.lockSha256);
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((error) => {
+    console.error('Unable to stage distribution components: ' + error.message);
+    process.exitCode = 1;
+  });
+}
