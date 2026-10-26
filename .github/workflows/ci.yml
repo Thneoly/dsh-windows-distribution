@@ -18,6 +18,8 @@ jobs:
           node-version: 24.21.0
       - name: Run unit tests
         run: npm test
+      - name: Verify version-locked distribution components
+        run: npm run verify:distribution-lock
       - name: Validate example distribution and payload digests
         run: npm run validate:example
       - name: Validate primary runtime lock fixture
