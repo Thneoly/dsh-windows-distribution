@@ -141,25 +141,39 @@ async function assertHostToolchain(pin) {
   }
 }
 
+export function createBuildOnlyConfig(releaseId = randomBytes(16).toString('hex')) {
+  if (!/^[a-f0-9]{32}$/u.test(releaseId)) throw new Error('build-only release ID must be 32 lowercase hexadecimal characters');
+  return [
+    'DSH_DESKTOP_APP_ID=com.deepseek.harness',
+    'DSH_DESKTOP_AUTO_UPDATE_ENV=test',
+    'DOWNLOAD_TEST_ORIGIN=https://dsh-build-only.invalid',
+    'DOWNLOAD_TEST_RELEASE_ID=' + releaseId,
+    'DSH_DESKTOP_MANDATORY_UPDATE_TEST_ORIGIN=https://dsh-mandatory-update-build-only.invalid',
+    `DSH_DESKTOP_MANDATORY_UPDATE_CONFIG='{"allowedAuthOrigins":["https://dsh-login-build-only.invalid"]}'`,
+    ''
+  ].join('\\n');
+}
+
 async function resolveConfig(configArgument, upstreamRoot, profile) {
+  if (profile === 'build-only') {
+    if (configArgument !== undefined) {
+      throw new Error('--config cannot be combined with --profile build-only; the build-only profile owns its reserved .invalid configuration');
+    }
+    const configPath = path.join(PROJECT_ROOT, 'config', 'windows-build-only.env');
+    await mkdir(path.dirname(configPath), { recursive: true });
+    if (await exists(configPath)) {
+      const info = await lstat(configPath);
+      if (!info.isFile() || info.isSymbolicLink()) {
+        throw new Error('build-only config must be a regular, non-symlink file: ' + configPath);
+      }
+    }
+    await writeFile(configPath, createBuildOnlyConfig(), { encoding: 'utf8' });
+    console.warn('Generated local build-only config with reserved .invalid endpoints. Login and updates are intentionally unavailable; do not distribute this installer.');
+    return configPath;
+  }
+
   const configPath = path.resolve(PROJECT_ROOT, configArgument || path.relative(PROJECT_ROOT, DEFAULT_CONFIG));
   if (!(await exists(configPath))) {
-    if (profile === 'build-only') {
-      await mkdir(path.dirname(configPath), { recursive: true });
-      const releaseId = randomBytes(16).toString('hex');
-      const buildOnlyConfig = [
-        'DSH_DESKTOP_APP_ID=com.deepseek.harness',
-        'DSH_DESKTOP_AUTO_UPDATE_ENV=test',
-        'DOWNLOAD_TEST_ORIGIN=https://dsh-build-only.invalid',
-        'DOWNLOAD_TEST_RELEASE_ID=' + releaseId,
-        'DSH_DESKTOP_MANDATORY_UPDATE_TEST_ORIGIN=https://dsh-mandatory-update-build-only.invalid',
-        `DSH_DESKTOP_MANDATORY_UPDATE_CONFIG='{"allowedAuthOrigins":["https://dsh-login-build-only.invalid"]}'`,
-        ''
-      ].join('\n');
-      await writeFile(configPath, buildOnlyConfig, { encoding: 'utf8', flag: 'wx' });
-      console.warn('Generated local build-only config with reserved .invalid endpoints. Login and updates are intentionally unavailable; do not distribute this installer.');
-      return configPath;
-    }
     const template = path.join(upstreamRoot, 'apps', 'desktop', '.env.windows.example');
     const examplePath = path.join(PROJECT_ROOT, 'config', 'windows.env.example');
     await mkdir(path.dirname(examplePath), { recursive: true });
@@ -175,7 +189,6 @@ async function resolveConfig(configArgument, upstreamRoot, profile) {
   }
   return configPath;
 }
-
 async function listFiles(root) {
   const files = [];
   if (!(await exists(root))) return files;
