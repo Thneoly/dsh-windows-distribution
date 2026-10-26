@@ -9,8 +9,8 @@
 
 ## P1 — Inspect and adapt upstream
 
-- [ ] Pin the exact upstream DSH commit used for the first Windows build.
-- [ ] Confirm current desktop packaging scripts, runtime descriptor generation and installer/update behavior at that commit.
+- [x] Pin latest published upstream release `v0.2.1-rc.3` (`dsh-v0.2.1-rc.3`) to commit `1f81c047fc48fa190a683e469daa699857e9afe8`.
+- [ ] Confirm current desktop packaging scripts, runtime descriptor generation and installer/update behavior at the pinned commit.
 - [ ] Add an adapter that consumes upstream `scripts/primary-runtime/lock.json`, `pnpm-lock.yaml`, Electron package metadata and existing runtime descriptors without duplicating their authority.
 - [ ] Record the exact Electron-embedded Node.js version from the built Electron runtime.
 
