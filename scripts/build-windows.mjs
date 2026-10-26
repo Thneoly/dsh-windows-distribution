@@ -20,6 +20,14 @@ export function parseInstallerVersion(filename) {
   return match[1];
 }
 
+export function selectInstallerArtifact(artifacts) {
+  const installer = artifacts.find((artifact) =>
+    /^deepseek-harness-.+-win-x64-unsigned\.exe$/i.test(path.basename(artifact.file))
+  );
+  if (!installer) throw new Error('unsigned Windows installer artifact is missing from the artifact manifest');
+  return installer;
+}
+
 export function validateBuildVersion(value) {
   if (typeof value !== 'string' || !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$/.test(value)) {
     throw new Error('build version must be a semantic version');
@@ -243,7 +251,7 @@ async function prepareArtifactDirectory(files, installer, pin, profile) {
   checksumLines.push((await sha256(manifestPath)) + '  release-manifest.json');
   await writeFile(path.join(destination, 'SHA256SUMS.txt'), checksumLines.join('\n') + '\n', 'utf8');
 
-  const installerArtifact = artifacts.find((artifact) => artifact.file.toLowerCase().endsWith('.exe'));
+  const installerArtifact = selectInstallerArtifact(artifacts);
   console.log('Windows installer: ' + path.join(destination, installerArtifact.file));
   console.log('Installer SHA-256: ' + installerArtifact.sha256);
   console.log('Release manifest: ' + manifestPath);
