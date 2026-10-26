@@ -24,6 +24,8 @@ jobs:
         run: npm run validate:runtime-lock:fixture
       - name: Validate pinned upstream release
         run: npm run validate:upstream-pin
+      - name: Smoke-test Windows build CLI
+        run: npm run build:windows -- --help
 
   verify-pinned-upstream:
     runs-on: ubuntu-latest

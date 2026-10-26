@@ -21,11 +21,18 @@
 - [ ] Validate all files and dependency edges before invoking the upstream Windows packager.
 - [ ] Keep user extensions and user data outside immutable release resources.
 
-## P3 — Windows acceptance
+## P3 — Windows baseline build
 
-- [ ] Build unsigned Windows x64 installer in CI or a Windows build host.
+- [x] Add a Windows x64 build orchestrator that verifies the pinned DSH checkout and exact build-host Node.js/Python/pnpm versions.
+- [x] Add a manual Windows Actions workflow for an unsigned test installer, with explicit HTTPS origin inputs and artifact provenance/SHA-256 output.
+- [ ] Run the workflow with real test-service origins and inspect the generated installer.
 - [ ] Install and run on a clean Windows x64 VM without system Node.js, Python or pnpm.
-- [ ] Test corrupted/missing artifact rejection and user-extension preservation across upgrade.
+
+## P4 — Distribution components and upgrade safety
+
+- [ ] Generate a DSH bundle from version-locked built-in plugin/workflow/tool components and inject it into the pinned Desktop runtime.
+- [ ] Keep built-in component resources immutable and user extensions/configuration in separate user-owned storage.
+- [ ] Test corrupted/missing component rejection, upgrade preservation, and rollback behavior.
 - [ ] Add signing and production publishing only after credentials and release policy are configured.
 
 ## Out of scope for the first MVP

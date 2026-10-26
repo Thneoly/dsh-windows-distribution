@@ -1,0 +1,121 @@
+name: Windows unsigned installer
+
+on:
+  workflow_dispatch:
+    inputs:
+      download_test_origin:
+        description: HTTPS origin used by the test download/update service (no path)
+        required: true
+        type: string
+      mandatory_update_test_origin:
+        description: HTTPS origin for the mandatory-update test policy (no path)
+        required: true
+        type: string
+      allowed_auth_origin:
+        description: Approved HTTPS login origin for the test policy (no path)
+        required: true
+        type: string
+      test_release_id:
+        description: Optional 32-character lowercase hex ID; reuse it to test upgrades across builds
+        required: false
+        default: ""
+        type: string
+      build_version:
+        description: Use auto for a unique CI version, or provide an exact SemVer build version
+        required: true
+        default: auto
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-unsigned-installer-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: windows-2022
+    timeout-minutes: 120
+    steps:
+      - name: Checkout distribution tooling
+        uses: actions/checkout@v4
+
+      - name: Set up pinned Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.21.0
+
+      - name: Set up pinned Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12.14
+
+      - name: Install pinned pnpm
+        run: npm install --global pnpm@11.28.5
+
+      - name: Prepare test-only packaging configuration
+        shell: pwsh
+        env:
+          DOWNLOAD_TEST_ORIGIN: ${{ inputs.download_test_origin }}
+          MANDATORY_UPDATE_TEST_ORIGIN: ${{ inputs.mandatory_update_test_origin }}
+          ALLOWED_AUTH_ORIGIN: ${{ inputs.allowed_auth_origin }}
+          INPUT_TEST_RELEASE_ID: ${{ inputs.test_release_id }}
+          INPUT_BUILD_VERSION: ${{ inputs.build_version }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+          GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+        run: |
+          function Assert-HttpsOrigin([string]$value, [string]$label) {
+            $uri = $null
+            if (-not [Uri]::TryCreate($value, [UriKind]::Absolute, [ref]$uri)) {
+              throw "$label must be an absolute HTTPS origin."
+            }
+            if ($uri.Scheme -ne 'https' -or $uri.UserInfo -ne '' -or $uri.AbsolutePath -ne '/' -or $uri.Query -ne '' -or $uri.Fragment -ne '') {
+              throw "$label must be an HTTPS origin without credentials, path, query, or fragment."
+            }
+          }
+
+          Assert-HttpsOrigin $env:DOWNLOAD_TEST_ORIGIN 'download_test_origin'
+          Assert-HttpsOrigin $env:MANDATORY_UPDATE_TEST_ORIGIN 'mandatory_update_test_origin'
+          Assert-HttpsOrigin $env:ALLOWED_AUTH_ORIGIN 'allowed_auth_origin'
+
+          $releaseId = $env:INPUT_TEST_RELEASE_ID
+          if ([string]::IsNullOrWhiteSpace($releaseId)) {
+            $releaseId = [guid]::NewGuid().ToString('N')
+          }
+          if ($releaseId -notmatch '^[0-9a-f]{32}$') {
+            throw 'test_release_id must be exactly 32 lowercase hexadecimal characters.'
+          }
+
+          $pin = Get-Content -LiteralPath 'upstream.lock.json' -Raw | ConvertFrom-Json
+          if ($env:INPUT_BUILD_VERSION -eq 'auto') {
+            $utcDate = (Get-Date).ToUniversalTime().ToString('yyyyMMdd')
+            $buildVersion = "$($pin.release.version).$utcDate.$env:GITHUB_RUN_NUMBER.$env:GITHUB_RUN_ATTEMPT"
+          } else {
+            $buildVersion = $env:INPUT_BUILD_VERSION
+          }
+          "BUILD_VERSION=$buildVersion" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+          $configJson = @{ allowedAuthOrigins = @($env:ALLOWED_AUTH_ORIGIN) } | ConvertTo-Json -Compress
+          $configLines = @(
+            'DSH_DESKTOP_APP_ID=com.deepseek.harness',
+            'DSH_DESKTOP_AUTO_UPDATE_ENV=test',
+            "DOWNLOAD_TEST_ORIGIN=$($env:DOWNLOAD_TEST_ORIGIN)",
+            "DOWNLOAD_TEST_RELEASE_ID=$releaseId",
+            "DSH_DESKTOP_MANDATORY_UPDATE_TEST_ORIGIN=$($env:MANDATORY_UPDATE_TEST_ORIGIN)",
+            "DSH_DESKTOP_MANDATORY_UPDATE_CONFIG='$configJson'"
+          )
+          New-Item -ItemType Directory -Force -Path 'config' | Out-Null
+          Set-Content -LiteralPath 'config/windows.env' -Value $configLines -Encoding utf8NoBOM
+          Write-Host 'Created local test-only packaging configuration; configuration will not be uploaded.'
+
+      - name: Build pinned DSH Windows installer
+        run: npm run build:windows -- --config config/windows.env --build-version "$env:BUILD_VERSION"
+
+      - name: Upload unsigned installer and provenance
+        uses: actions/upload-artifact@v4
+        with:
+          name: dsh-windows-unsigned-${{ github.run_id }}-${{ github.run_attempt }}
+          path: .build/artifacts/**
+          if-no-files-found: error
+          retention-days: 14

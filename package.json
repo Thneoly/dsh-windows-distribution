@@ -13,6 +13,7 @@
     "validate:runtime-lock:fixture": "node scripts/verify-runtime-lock.mjs fixtures/primary-runtime-lock.minimal.json",
     "validate:upstream-pin": "node scripts/validate-upstream-pin.mjs upstream.lock.json",
     "checkout:upstream": "node scripts/checkout-pinned-upstream.mjs",
-    "verify:upstream-checkout": "node scripts/verify-upstream-checkout.mjs"
+    "verify:upstream-checkout": "node scripts/verify-upstream-checkout.mjs",
+    "build:windows": "node scripts/build-windows.mjs"
   }
 }
