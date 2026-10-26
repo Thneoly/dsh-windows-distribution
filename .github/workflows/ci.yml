@@ -22,3 +22,5 @@ jobs:
         run: npm run validate:example
       - name: Validate primary runtime lock fixture
         run: npm run validate:runtime-lock:fixture
+      - name: Validate pinned upstream release
+        run: npm run validate:upstream-pin
