@@ -135,7 +135,7 @@ async function assertHostToolchain(pin) {
 
   const pythonCommand = process.env.PYTHON || 'python';
   const pythonVersion = await readCommandVersion(pythonCommand, ['--version']);
-  const pythonMatch = /^Python\\s+(\\d+\\.\\d+\\.\\d+)$/u.exec(pythonVersion);
+  const pythonMatch = /^Python\s+(\d+\.\d+\.\d+)$/u.exec(pythonVersion);
   if (!pythonMatch || pythonMatch[1] !== host.pythonVersion) {
     throw new Error('build host Python must be ' + host.pythonVersion + ', found ' + pythonVersion);
   }
