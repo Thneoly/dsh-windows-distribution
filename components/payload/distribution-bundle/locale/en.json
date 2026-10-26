@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Distribution tools",
+    "description": "Inspect the installed distribution bundle and read version-locked workflow recipes."
+  }
+}
