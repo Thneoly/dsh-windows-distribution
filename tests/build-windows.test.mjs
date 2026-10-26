@@ -3,6 +3,8 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import {
   createBuildManifest,
+  createUnsignedBuildArgs,
+  createUnsignedPreflightArgs,
   parseInstallerVersion,
   validateBuildVersion
 } from '../scripts/build-windows.mjs';
@@ -35,4 +37,17 @@ test('build manifest records the pinned source and unsigned mode', () => {
   assert.equal(manifest.buildMode, 'unsigned-test');
   assert.equal(manifest.customDistributionComponentsIncluded, false);
   assert.equal(manifest.artifacts[0].sha256, 'a'.repeat(64));
+});
+
+test('preflight runs the exact upstream unsigned package target', () => {
+  assert.deepEqual(createUnsignedPreflightArgs(), [
+    '--dir', 'apps/desktop', 'run', 'package:win:x64:unsigned', '--', '--check'
+  ]);
+});
+
+test('build forwards the exact version through pnpm script argument separator', () => {
+  assert.deepEqual(createUnsignedBuildArgs('0.2.1-rc.3.20261026.40.1'), [
+    '--dir', 'apps/desktop', 'run', 'package:win:x64:unsigned', '--',
+    '--build-version', '0.2.1-rc.3.20261026.40.1'
+  ]);
 });
