@@ -15,7 +15,7 @@ const requiredFiles = [
 export function validateUpstreamPin(pin) {
   const errors = [];
   if (!pin || typeof pin !== 'object' || Array.isArray(pin)) return ['pin must be a JSON object'];
-  if (pin.schemaVersion !== 1) errors.push('schemaVersion must equal 1');
+  if (pin.schemaVersion !== 2) errors.push('schemaVersion must equal 2');
   if (pin.repository !== 'deepseek-ai/deepseek-harness') errors.push('repository must be deepseek-ai/deepseek-harness');
 
   if (!pin.release || typeof pin.release !== 'object') {
@@ -52,8 +52,18 @@ export function validateUpstreamPin(pin) {
         errors.push('toolchain.' + field + ' must be an exact version');
       }
     }
-    if (typeof pin.toolchain.pythonRelease !== 'string' || !/^\d{8}$/.test(pin.toolchain.pythonRelease)) {
+    if (typeof pin.toolchain.pythonRelease !== 'string' || !/^\\d{8}$/.test(pin.toolchain.pythonRelease)) {
       errors.push('toolchain.pythonRelease must be YYYYMMDD');
+    }
+  }
+
+  if (!pin.buildHostToolchain || typeof pin.buildHostToolchain !== 'object') {
+    errors.push('buildHostToolchain must be an object');
+  } else {
+    for (const field of ['nodeVersion', 'pythonVersion', 'pnpmVersion']) {
+      if (typeof pin.buildHostToolchain[field] !== 'string' || !exactVersion.test(pin.buildHostToolchain[field])) {
+        errors.push('buildHostToolchain.' + field + ' must be an exact version');
+      }
     }
   }
   return errors;
