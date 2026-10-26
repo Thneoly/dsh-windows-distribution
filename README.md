@@ -20,6 +20,12 @@
 4. **Fail closed**：缺失锁文件、摘要不匹配、组件不兼容或目标平台不匹配时，构建/激活必须失败。
 5. **No implicit network install**：发行版首次启动不应在线补装内置运行时或内置依赖。
 
+## 固定的上游基线
+
+当前基线固定为 DeepSeek Harness 最新已发布 GitHub Release（截至 2026-10-26）：**`v0.2.1-rc.3`**。这是预发布候选版本，不是稳定版。发布标签 `dsh-v0.2.1-rc.3` 指向不可变 commit `1f81c047fc48fa190a683e469daa699857e9afe8`。精确版本、关键源文件 Git blob SHA、运行时和 Electron 版本记录在 [`upstream.lock.json`](upstream.lock.json)。构建必须使用该 commit，不允许浮动使用 `master`。
+
+官方发布记录：[v0.2.1-rc.3](https://github.com/deepseek-ai/deepseek-harness/releases/tag/dsh-v0.2.1-rc.3)。
+
 ## 初始范围
 
 - Windows x64。
@@ -49,7 +55,7 @@ npm run validate:example
 ## 上游
 
 - [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)
-- [Primary runtime lock](https://github.com/deepseek-ai/deepseek-harness/blob/master/scripts/primary-runtime/lock.json)
+- [Primary runtime lock](https://github.com/deepseek-ai/deepseek-harness/blob/1f81c047fc48fa190a683e469daa699857e9afe8/scripts/primary-runtime/lock.json)
 - [Desktop packaging guide](https://github.com/deepseek-ai/deepseek-harness/blob/master/apps/desktop/packaging/README.zh.md)
 
 ## License
