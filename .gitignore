@@ -10,3 +10,4 @@ Thumbs.db
 .build/
 config/windows.env
 config/windows.env.example
+config/windows-build-only.env
