@@ -5,6 +5,7 @@ import {
 } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
 import { promisify } from 'node:util';
 
 const execFile = promisify(execFileCallback);
@@ -21,8 +22,8 @@ export function parseInstallerVersion(filename) {
 }
 
 export function validateBuildVersion(value) {
-  if (typeof value !== 'string' || value.length === 0 || !/^[0-9A-Za-z.+-]+$/.test(value)) {
-    throw new Error('build version must contain only letters, digits, dots, plus signs, or hyphens');
+  if (typeof value !== 'string' || !/^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$/.test(value)) {
+    throw new Error('build version must be a semantic version');
   }
   return value;
 }
@@ -165,7 +166,7 @@ async function sha256(filePath) {
   return createHash('sha256').update(bytes).digest('hex');
 }
 
-async function prepareArtifactDirectory(outputDirectory, files, installer, pin) {
+async function prepareArtifactDirectory(files, installer, pin) {
   const buildVersion = parseInstallerVersion(path.basename(installer.fullPath));
   const destination = path.join(BUILD_ROOT, 'artifacts', buildVersion);
   if (await exists(destination)) {
@@ -202,7 +203,6 @@ async function prepareArtifactDirectory(outputDirectory, files, installer, pin) 
 }
 
 async function main() {
-  const { parseArgs } = await import('node:util');
   const { values } = parseArgs({
     options: {
       config: { type: 'string' },
@@ -219,7 +219,7 @@ async function main() {
   }
 
   const pin = JSON.parse(await readFile(path.join(PROJECT_ROOT, 'upstream.lock.json'), 'utf8'));
-  validateBuildVersion(values['build-version'] === 'auto' ? 'auto' : values['build-version']);
+  if (values['build-version'] !== 'auto') validateBuildVersion(values['build-version']);
   await assertHostToolchain(pin);
   await mkdir(BUILD_ROOT, { recursive: true });
   await removeOwnedCheckout();
@@ -263,7 +263,7 @@ async function main() {
   if (installers.length !== 1) {
     throw new Error('expected exactly one newly created unsigned Windows installer, found ' + installers.length);
   }
-  await prepareArtifactDirectory(artifactSource, newFiles, installers[0], pin);
+  await prepareArtifactDirectory(newFiles, installers[0], pin);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
