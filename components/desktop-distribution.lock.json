@@ -30,7 +30,7 @@
         },
         {
           "path": "distribution-bundle/lib/index.js",
-          "sha256": "f606742bdd59cca15bebbf27526152ba412887829463a3a3ce83849e70fca63e"
+          "sha256": "c191e2e336f6c7f4f1f12255f6e8b3fd26dc7f2d8b52b7e64a0836a2aa41a356"
         },
         {
           "path": "distribution-bundle/cordis.patch.yml",
@@ -76,7 +76,7 @@
       "files": [
         {
           "path": "distribution-bundle/lib/index.js",
-          "sha256": "f606742bdd59cca15bebbf27526152ba412887829463a3a3ce83849e70fca63e"
+          "sha256": "c191e2e336f6c7f4f1f12255f6e8b3fd26dc7f2d8b52b7e64a0836a2aa41a356"
         }
       ]
     },
@@ -92,7 +92,7 @@
       "files": [
         {
           "path": "distribution-bundle/lib/index.js",
-          "sha256": "f606742bdd59cca15bebbf27526152ba412887829463a3a3ce83849e70fca63e"
+          "sha256": "c191e2e336f6c7f4f1f12255f6e8b3fd26dc7f2d8b52b7e64a0836a2aa41a356"
         }
       ]
     }
