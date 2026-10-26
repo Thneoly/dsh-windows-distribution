@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { execFile as execFileCallback, spawn } from 'node:child_process';
 import {
   copyFile, lstat, mkdir, readFile, readdir, rm, stat, writeFile
@@ -38,7 +38,8 @@ export function createUnsignedBuildArgs(buildVersion) {
   ];
 }
 
-export function createBuildManifest({ pin, buildVersion, artifacts, builtAt = new Date().toISOString() }) {
+export function createBuildManifest({ pin, buildVersion, artifacts, builtAt = new Date().toISOString(), profile = 'configured-test' }) {
+  if (!['build-only', 'configured-test'].includes(profile)) throw new Error('build profile must be build-only or configured-test');
   return {
     schemaVersion: 1,
     product: 'deepseek-harness',
@@ -46,7 +47,10 @@ export function createBuildManifest({ pin, buildVersion, artifacts, builtAt = ne
     releaseTag: pin.release.tag,
     upstreamCommit: pin.commit,
     target: EXPECTED_PLATFORM,
-    buildMode: 'unsigned-test',
+    buildMode: profile === 'build-only' ? 'unsigned-build-only' : 'unsigned-test',
+    distributionProfile: profile,
+    networkServicesConfigured: profile === 'configured-test',
+    distributionEligible: false,
     buildVersion,
     toolchain: pin.toolchain,
     customDistributionComponentsIncluded: false,
@@ -137,7 +141,37 @@ async function assertHostToolchain(pin) {
   }
 }
 
-async function resolveConfig(configArgument, upstreamRoot) {
+export function createBuildOnlyConfig(releaseId = randomBytes(16).toString('hex')) {
+  if (!/^[a-f0-9]{32}$/u.test(releaseId)) throw new Error('build-only release ID must be 32 lowercase hexadecimal characters');
+  return [
+    'DSH_DESKTOP_APP_ID=com.deepseek.harness',
+    'DSH_DESKTOP_AUTO_UPDATE_ENV=test',
+    'DOWNLOAD_TEST_ORIGIN=https://dsh-build-only.invalid',
+    'DOWNLOAD_TEST_RELEASE_ID=' + releaseId,
+    'DSH_DESKTOP_MANDATORY_UPDATE_TEST_ORIGIN=https://dsh-mandatory-update-build-only.invalid',
+    `DSH_DESKTOP_MANDATORY_UPDATE_CONFIG='{"allowedAuthOrigins":["https://dsh-login-build-only.invalid"]}'`,
+    ''
+  ].join('\n');
+}
+
+async function resolveConfig(configArgument, upstreamRoot, profile) {
+  if (profile === 'build-only') {
+    if (configArgument !== undefined) {
+      throw new Error('--config cannot be combined with --profile build-only; the build-only profile owns its reserved .invalid configuration');
+    }
+    const configPath = path.join(PROJECT_ROOT, 'config', 'windows-build-only.env');
+    await mkdir(path.dirname(configPath), { recursive: true });
+    if (await exists(configPath)) {
+      const info = await lstat(configPath);
+      if (!info.isFile() || info.isSymbolicLink()) {
+        throw new Error('build-only config must be a regular, non-symlink file: ' + configPath);
+      }
+    }
+    await writeFile(configPath, createBuildOnlyConfig(), { encoding: 'utf8' });
+    console.warn('Generated local build-only config with reserved .invalid endpoints. Login and updates are intentionally unavailable; do not distribute this installer.');
+    return configPath;
+  }
+
   const configPath = path.resolve(PROJECT_ROOT, configArgument || path.relative(PROJECT_ROOT, DEFAULT_CONFIG));
   if (!(await exists(configPath))) {
     const template = path.join(upstreamRoot, 'apps', 'desktop', '.env.windows.example');
@@ -146,7 +180,7 @@ async function resolveConfig(configArgument, upstreamRoot) {
     if (!(await exists(examplePath))) await copyFile(template, examplePath);
     console.error('Windows build configuration is missing: ' + configPath);
     console.error('A template from the pinned DSH release is available at: ' + examplePath);
-    console.error('Copy it to config/windows.env and fill the required HTTPS origins before building.');
+    console.error('Copy it to config/windows.env and fill the required HTTPS origins before a configured-test build, or pass --profile build-only to build with reserved .invalid endpoints.');
     return undefined;
   }
   const info = await lstat(configPath);
@@ -155,7 +189,6 @@ async function resolveConfig(configArgument, upstreamRoot) {
   }
   return configPath;
 }
-
 async function listFiles(root) {
   const files = [];
   if (!(await exists(root))) return files;
@@ -176,7 +209,7 @@ async function sha256(filePath) {
   return createHash('sha256').update(bytes).digest('hex');
 }
 
-async function prepareArtifactDirectory(files, installer, pin) {
+async function prepareArtifactDirectory(files, installer, pin, profile) {
   const buildVersion = parseInstallerVersion(path.basename(installer.fullPath));
   const destination = path.join(BUILD_ROOT, 'artifacts', buildVersion);
   if (await exists(destination)) {
@@ -196,7 +229,7 @@ async function prepareArtifactDirectory(files, installer, pin) {
     });
   }
 
-  const manifest = createBuildManifest({ pin, buildVersion, artifacts });
+  const manifest = createBuildManifest({ pin, buildVersion, artifacts, profile });
   const manifestPath = path.join(destination, 'release-manifest.json');
   await writeFile(manifestPath, JSON.stringify(manifest, null, 2) + '\n', 'utf8');
 
@@ -217,6 +250,7 @@ async function main() {
     options: {
       config: { type: 'string' },
       'build-version': { type: 'string', default: 'auto' },
+      profile: { type: 'string', default: 'configured-test' },
       check: { type: 'boolean', default: false },
       help: { type: 'boolean', default: false }
     },
@@ -224,11 +258,12 @@ async function main() {
   });
 
   if (values.help) {
-    console.log('Usage: node scripts/build-windows.mjs [--config config/windows.env] [--build-version auto|<version>] [--check]');
+    console.log('Usage: node scripts/build-windows.mjs [--profile build-only|configured-test] [--config config/windows.env] [--build-version auto|<version>] [--check]');
     return;
   }
 
   const pin = JSON.parse(await readFile(path.join(PROJECT_ROOT, 'upstream.lock.json'), 'utf8'));
+  if (!['build-only', 'configured-test'].includes(values.profile)) throw new Error('--profile must be build-only or configured-test');
   if (values['build-version'] !== 'auto') validateBuildVersion(values['build-version']);
   await assertHostToolchain(pin);
   await mkdir(BUILD_ROOT, { recursive: true });
@@ -237,7 +272,7 @@ async function main() {
   await runNodeScript(path.join(PROJECT_ROOT, 'scripts', 'checkout-pinned-upstream.mjs'), [path.relative(PROJECT_ROOT, UPSTREAM_ROOT)]);
   await runNodeScript(path.join(PROJECT_ROOT, 'scripts', 'verify-upstream-checkout.mjs'), [UPSTREAM_ROOT]);
 
-  const configPath = await resolveConfig(values.config, UPSTREAM_ROOT);
+  const configPath = await resolveConfig(values.config, UPSTREAM_ROOT, values.profile);
   if (!configPath) {
     process.exitCode = 2;
     return;
@@ -270,7 +305,7 @@ async function main() {
   if (installers.length !== 1) {
     throw new Error('expected exactly one newly created unsigned Windows installer, found ' + installers.length);
   }
-  await prepareArtifactDirectory(newFiles, installers[0], pin);
+  await prepareArtifactDirectory(newFiles, installers[0], pin, values.profile);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
