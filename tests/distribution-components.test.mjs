@@ -56,7 +56,7 @@ test('distribution component adapter stages an optional bundle and verifies the 
     }, null, 2) + '\n', 'utf8');
     const compiledProfile = path.join(runtimeRoot, 'node_modules', '@deepseek-ai', 'dsh-app-boot', 'lib');
     await mkdir(compiledProfile, { recursive: true });
-    await writeFile(path.join(compiledProfile, 'profile.js'), "export const OPTIONAL_BUNDLES = ['@thneoly/dsh-distribution-bundle'];\n", 'utf8');
+    await writeFile(path.join(compiledProfile, 'index.js'), "export const OPTIONAL_BUNDLES = ['@thneoly/dsh-distribution-bundle'];\n", 'utf8');
 
     const verified = await verifyBundledDistributionComponents(upstreamRoot, distribution);
     assert.equal(verified.payloadVerified, true);
