@@ -5,8 +5,7 @@ import {
 } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseArgs } from 'node:util';
-import { promisify } from 'node:util';
+import { parseArgs, promisify } from 'node:util';
 
 const execFile = promisify(execFileCallback);
 const PROJECT_ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
@@ -22,7 +21,7 @@ export function parseInstallerVersion(filename) {
 }
 
 export function validateBuildVersion(value) {
-  if (typeof value !== 'string' || !/^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$/.test(value)) {
+  if (typeof value !== 'string' || !/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z.-]+)?(\+[0-9A-Za-z.-]+)?$/.test(value)) {
     throw new Error('build version must be a semantic version');
   }
   return value;
