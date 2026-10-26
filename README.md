@@ -49,7 +49,7 @@ npm run validate:example
 
 ## Windows 构建
 
-当前已提供固定上游版本的 Windows x64 **未签名测试安装包**构建脚本和手动 GitHub Actions 工作流。它用于先验证上游安装包、运行时和构建产物的可复现性；内置自定义插件、工作流和工具的实际注入仍是后续里程碑。详见[Windows 构建指南](docs/windows-build.md)。
+当前已提供固定上游版本的 Windows x64 **未签名安装包**构建脚本和手动 GitHub Actions 工作流。没有登录、下载或更新服务时，可以使用默认的 `build-only` 模式验证打包与运行时；该产物明确不可分发、不能登录或自动更新。真实服务准备好后，再使用 `configured-test` 模式。内置自定义插件、工作流和工具的实际注入仍是后续里程碑。详见[Windows 构建指南](docs/windows-build.md)。
 
 ## 文档
 
