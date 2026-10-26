@@ -3,17 +3,28 @@ name: Windows unsigned installer
 on:
   workflow_dispatch:
     inputs:
-      download_test_origin:
-        description: HTTPS origin used by the test download/update service (no path)
+      build_profile:
+        description: Build-only uses reserved .invalid endpoints; configured-test requires real test services
         required: true
+        type: choice
+        options:
+          - build-only
+          - configured-test
+        default: build-only
+      download_test_origin:
+        description: Required only for configured-test; HTTPS origin for the test download/update service
+        required: false
+        default: ""
         type: string
       mandatory_update_test_origin:
-        description: HTTPS origin for the mandatory-update test policy (no path)
-        required: true
+        description: Required only for configured-test; HTTPS origin for the mandatory-update policy service
+        required: false
+        default: ""
         type: string
       allowed_auth_origin:
-        description: Approved HTTPS login origin for the test policy (no path)
-        required: true
+        description: Required only for configured-test; approved HTTPS login origin
+        required: false
+        default: ""
         type: string
       test_release_id:
         description: Optional 32-character lowercase hex ID; reuse it to test upgrades across builds
@@ -54,9 +65,10 @@ jobs:
       - name: Install pinned pnpm
         run: npm install --global pnpm@11.28.5
 
-      - name: Prepare test-only packaging configuration
+      - name: Prepare build profile and version
         shell: pwsh
         env:
+          BUILD_PROFILE_INPUT: ${{ inputs.build_profile }}
           DOWNLOAD_TEST_ORIGIN: ${{ inputs.download_test_origin }}
           MANDATORY_UPDATE_TEST_ORIGIN: ${{ inputs.mandatory_update_test_origin }}
           ALLOWED_AUTH_ORIGIN: ${{ inputs.allowed_auth_origin }}
@@ -65,9 +77,29 @@ jobs:
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
           GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
         run: |
+          $profile = $env:BUILD_PROFILE_INPUT
+          if ($profile -notin @('build-only', 'configured-test')) {
+            throw 'build_profile must be build-only or configured-test.'
+          }
+
+          $pin = Get-Content -LiteralPath 'upstream.lock.json' -Raw | ConvertFrom-Json
+          if ($env:INPUT_BUILD_VERSION -eq 'auto') {
+            $utcDate = (Get-Date).ToUniversalTime().ToString('yyyyMMdd')
+            $buildVersion = "$($pin.release.version).$utcDate.$env:GITHUB_RUN_NUMBER.$env:GITHUB_RUN_ATTEMPT"
+          } else {
+            $buildVersion = $env:INPUT_BUILD_VERSION
+          }
+          "BUILD_PROFILE=$profile" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "BUILD_VERSION=$buildVersion" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+          if ($profile -eq 'build-only') {
+            Write-Host 'Build-only mode: no application backend is configured. The build script will use reserved .invalid origins.'
+            exit 0
+          }
+
           function Assert-HttpsOrigin([string]$value, [string]$label) {
             $uri = $null
-            if (-not [Uri]::TryCreate($value, [UriKind]::Absolute, [ref]$uri)) {
+            if ([string]::IsNullOrWhiteSpace($value) -or -not [Uri]::TryCreate($value, [UriKind]::Absolute, [ref]$uri)) {
               throw "$label must be an absolute HTTPS origin."
             }
             if ($uri.Scheme -ne 'https' -or $uri.UserInfo -ne '' -or $uri.AbsolutePath -ne '/' -or $uri.Query -ne '' -or $uri.Fragment -ne '') {
@@ -87,15 +119,6 @@ jobs:
             throw 'test_release_id must be exactly 32 lowercase hexadecimal characters.'
           }
 
-          $pin = Get-Content -LiteralPath 'upstream.lock.json' -Raw | ConvertFrom-Json
-          if ($env:INPUT_BUILD_VERSION -eq 'auto') {
-            $utcDate = (Get-Date).ToUniversalTime().ToString('yyyyMMdd')
-            $buildVersion = "$($pin.release.version).$utcDate.$env:GITHUB_RUN_NUMBER.$env:GITHUB_RUN_ATTEMPT"
-          } else {
-            $buildVersion = $env:INPUT_BUILD_VERSION
-          }
-          "BUILD_VERSION=$buildVersion" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-
           $configJson = @{ allowedAuthOrigins = @($env:ALLOWED_AUTH_ORIGIN) } | ConvertTo-Json -Compress
           $configLines = @(
             'DSH_DESKTOP_APP_ID=com.deepseek.harness',
@@ -107,15 +130,26 @@ jobs:
           )
           New-Item -ItemType Directory -Force -Path 'config' | Out-Null
           Set-Content -LiteralPath 'config/windows.env' -Value $configLines -Encoding utf8NoBOM
-          Write-Host 'Created local test-only packaging configuration; configuration will not be uploaded.'
+          Write-Host 'Created configured-test packaging configuration; the file will not be uploaded.'
 
-      - name: Build pinned DSH Windows installer
-        run: npm run build:windows -- --config config/windows.env --build-version "$env:BUILD_VERSION"
+      - name: Build service-free Windows installer
+        if: inputs.build_profile == 'build-only'
+        shell: pwsh
+        run: |
+          npm run build:windows -- --profile build-only --build-version "$env:BUILD_VERSION"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Build configured-test Windows installer
+        if: inputs.build_profile == 'configured-test'
+        shell: pwsh
+        run: |
+          npm run build:windows -- --profile configured-test --config config/windows.env --build-version "$env:BUILD_VERSION"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Upload unsigned installer and provenance
         uses: actions/upload-artifact@v4
         with:
-          name: dsh-windows-unsigned-${{ github.run_id }}-${{ github.run_attempt }}
+          name: dsh-windows-${{ inputs.build_profile }}-unsigned-${{ github.run_id }}-${{ github.run_attempt }}
           path: .build/artifacts/**
           if-no-files-found: error
           retention-days: 14
