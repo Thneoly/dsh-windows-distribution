@@ -27,6 +27,17 @@ export function validateBuildVersion(value) {
   return value;
 }
 
+export function createUnsignedPreflightArgs() {
+  return ['--dir', 'apps/desktop', 'run', 'package:win:x64:unsigned', '--', '--check'];
+}
+
+export function createUnsignedBuildArgs(buildVersion) {
+  return [
+    '--dir', 'apps/desktop', 'run', 'package:win:x64:unsigned', '--',
+    '--build-version', buildVersion
+  ];
+}
+
 export function createBuildManifest({ pin, buildVersion, artifacts, builtAt = new Date().toISOString() }) {
   return {
     schemaVersion: 1,
@@ -235,7 +246,7 @@ async function main() {
   await copyFile(configPath, upstreamConfig);
 
   await runPnpm(['install', '--frozen-lockfile'], UPSTREAM_ROOT);
-  await runPnpm(['--dir', 'apps/desktop', 'run', 'package:win:x64:unsigned', '--', '--check'], UPSTREAM_ROOT);
+  await runPnpm(createUnsignedPreflightArgs(), UPSTREAM_ROOT);
   if (values.check) {
     console.log('Windows packaging preflight passed; installer build was not started.');
     return;
@@ -251,10 +262,7 @@ async function main() {
     }
   }
 
-  await runPnpm([
-    '--dir', 'apps/desktop', 'run', 'package:win:x64:unsigned', '--',
-    '--build-version', values['build-version']
-  ], UPSTREAM_ROOT);
+  await runPnpm(createUnsignedBuildArgs(values['build-version']), UPSTREAM_ROOT);
 
   const afterFiles = await listFiles(artifactSource);
   const newFiles = afterFiles.filter((file) => !beforeNames.has(file.relativePath));
