@@ -7,6 +7,7 @@ import {
   createUnsignedBuildArgs,
   createUnsignedPreflightArgs,
   parseInstallerVersion,
+  selectInstallerArtifact,
   validateBuildVersion
 } from '../scripts/build-windows.mjs';
 
@@ -18,6 +19,16 @@ test('installer filename yields the exact build version', () => {
 
 test('installer filename rejects unexpected artifact naming', () => {
   assert.throws(() => parseInstallerVersion('setup.exe'), /unexpected unsigned Windows installer filename/);
+});
+
+test('installer artifact selection ignores bundled helper executables', () => {
+  const artifacts = [
+    { file: '.nsis-directory-installer/7za.exe', sha256: 'a'.repeat(64) },
+    { file: 'deepseek-harness-0.2.1-rc.3.20261026.4.1-win-x64-unsigned.exe.blockmap', sha256: 'b'.repeat(64) },
+    { file: 'deepseek-harness-0.2.1-rc.3.20261026.4.1-win-x64-unsigned.exe', sha256: 'c'.repeat(64) }
+  ];
+  assert.equal(selectInstallerArtifact(artifacts).sha256, 'c'.repeat(64));
+  assert.throws(() => selectInstallerArtifact([{ file: '7za.exe', sha256: 'a'.repeat(64) }]), /installer artifact is missing/);
 });
 
 test('build versions must be semantic versions, not paths or floating labels', () => {
