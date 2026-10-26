@@ -78,8 +78,7 @@ function assertRuntimeMatchesPin(manifest, pin) {
     primaryNodeVersion: pin.toolchain.nodeVersion,
     pythonVersion: pin.toolchain.pythonVersion,
     pnpmVersion: pin.toolchain.pnpmVersion,
-    primaryRuntimeLockGitBlobSha: pin.files['scripts/primary-runtime/lock.json']?.gitBlobSha
-      ?? pin.files['scripts/primary-runtime/lock.json']?.gitBlobSha,
+    primaryRuntimeLockGitBlobSha: pin.files['scripts/primary-runtime/lock.json']?.gitBlobSha,
   };
   for (const [field, value] of Object.entries(expected)) {
     if (runtime[field] !== value) {
