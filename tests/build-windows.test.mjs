@@ -58,8 +58,8 @@ test('build-only config uses only reserved invalid origins and valid line delimi
   assert.match(config, /DOWNLOAD_TEST_ORIGIN=https:\/\/dsh-build-only\.invalid/);
   assert.match(config, /DSH_DESKTOP_MANDATORY_UPDATE_TEST_ORIGIN=https:\/\/dsh-mandatory-update-build-only\.invalid/);
   assert.match(config, /https:\/\/dsh-login-build-only\.invalid/);
-  assert.equal(config.includes('\\\\n'), false);
-  assert.equal(config.split('\\n').length, 7);
+  assert.equal(config.includes('\\n'), false);
+  assert.equal(config.split('\n').length, 7);
   assert.throws(() => createBuildOnlyConfig('not-a-release-id'), /32 lowercase hexadecimal/);
 });
 
