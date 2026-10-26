@@ -11,6 +11,7 @@
     "build:windows": "node scripts/build-windows.mjs",
     "checkout:upstream": "node scripts/checkout-pinned-upstream.mjs",
     "lock:distribution": "node scripts/lock-distribution.mjs --write",
+    "prepare:distribution-components": "node scripts/apply-distribution-components.mjs",
     "test": "node --test",
     "validate:example": "node scripts/validate-distribution.mjs examples/desktop-distribution.json --root examples/payload",
     "validate:runtime-lock:fixture": "node scripts/verify-runtime-lock.mjs fixtures/primary-runtime-lock.minimal.json",
