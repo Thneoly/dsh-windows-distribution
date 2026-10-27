@@ -2,7 +2,7 @@
 
 为 [DeepSeek Harness (DSH)](https://github.com/deepseek-ai/deepseek-harness) 构建可复现、可验证、可升级的 Windows 发行包。
 
-> 状态：已成功构建固定上游版本的 Windows x64 未签名安装包；自动安装验收、版本化自定义组件集成与正式更新服务仍在推进。当前仓库不包含 DSH 上游源码。
+> 状态：固定上游版本的 Windows x64 未签名安装包已可复现构建；版本锁定组件注入已端到端验证（2026-10-27 本地构建 + 静默安装冒烟全绿，含 app.asar 内 payload 摘要校验）。干净 VM 验证、configured-test 服务与签名发布仍未开始。当前仓库不包含 DSH 上游源码。
 
 ## 目标
 
@@ -50,7 +50,7 @@ npm run validate:example
 
 ## Windows 构建
 
-当前已提供固定上游版本的 Windows x64 **未签名安装包**构建脚本和手动 GitHub Actions 工作流。没有登录、下载或更新服务时，可以使用默认的 `build-only` 模式验证打包与运行时；该产物明确不可分发、不能登录或自动更新。真实服务准备好后，再使用 `configured-test` 模式。内置自定义插件、工作流和工具的实际注入仍是后续里程碑。详见[Windows 构建指南](docs/windows-build.md)。
+当前已提供固定上游版本的 Windows x64 **未签名安装包**构建脚本和手动 GitHub Actions 工作流。没有登录、下载或更新服务时，可以使用默认的 `build-only` 模式验证打包与运行时；该产物明确不可分发、不能登录或自动更新。真实服务准备好后，再使用 `configured-test` 模式。版本锁定的内置组件（`@thneoly/dsh-distribution-bundle`）已随安装包注入并经安装后冒烟验证；注入机制见[架构文档](docs/architecture.md)。详见[Windows 构建指南](docs/windows-build.md)。
 
 ## 文档
 
