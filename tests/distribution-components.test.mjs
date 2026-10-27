@@ -13,7 +13,7 @@ const payloadRoot = path.join(projectRoot, 'components', 'payload');
 test('checked-in distribution lock matches declaration, runtime pin, and every payload digest', async () => {
   const result = await verifyDistributionLock();
   assert.equal(result.bundleName, '@thneoly/dsh-distribution-bundle');
-  assert.equal(result.bundleVersion, '1.0.0');
+  assert.equal(result.bundleVersion, '0.2.1-rc.3');
   assert.equal(result.componentIds.length, 4);
   assert.equal(result.lockSha256.length, 64);
 });
@@ -23,6 +23,7 @@ test('distribution component adapter stages an optional bundle and verifies the 
   try {
     await mkdir(path.join(upstreamRoot, 'apps', 'cli'), { recursive: true });
     await mkdir(path.join(upstreamRoot, 'packages', 'boot', 'app-boot', 'src'), { recursive: true });
+    await mkdir(path.join(upstreamRoot, 'apps', 'desktop', 'scripts'), { recursive: true });
     await writeFile(path.join(upstreamRoot, 'pnpm-workspace.yaml'), 'packages:\n  - packages/*/*\n', 'utf8');
     await writeFile(path.join(upstreamRoot, 'apps', 'cli', 'package.json'), JSON.stringify({
       name: '@deepseek-ai/dsh',
@@ -35,6 +36,16 @@ test('distribution component adapter stages an optional bundle and verifies the 
       ']',
       ''
     ].join('\n'), 'utf8');
+    await writeFile(path.join(upstreamRoot, 'apps', 'desktop', 'scripts', 'package-target.ts'), [
+      '  await execute([',
+      "    '--dir',",
+      "    'apps/desktop-host',",
+      "    'pack',",
+      "    '--pack-destination',",
+      '    buildPaths.packedDsh,',
+      '  ], buildEnv, REPOSITORY_ROOT)',
+      ''
+    ].join('\n'), 'utf8');
 
     const distribution = await applyDistributionComponents(upstreamRoot);
     assert.equal(distribution.included, true);
@@ -44,7 +55,12 @@ test('distribution component adapter stages an optional bundle and verifies the 
     assert.equal(cliPackage.dependencies['@thneoly/dsh-distribution-bundle'], 'workspace:*');
     const profileSource = await readFile(path.join(upstreamRoot, 'packages', 'boot', 'app-boot', 'src', 'profile.ts'), 'utf8');
     assert.ok(profileSource.includes("'@thneoly/dsh-distribution-bundle'"));
-    assert.ok(await readFile(path.join(upstreamRoot, 'packages', 'experimental', 'dsh-distribution-bundle', 'workflows', 'distribution-smoke.md'), 'utf8'));
+    const workspaceSource = await readFile(path.join(upstreamRoot, 'pnpm-workspace.yaml'), 'utf8');
+    assert.ok(workspaceSource.split(/\r?\n/).some((line) => line.trim() === '- distribution-bundle'));
+    const packageTargetSource = await readFile(path.join(upstreamRoot, 'apps', 'desktop', 'scripts', 'package-target.ts'), 'utf8');
+    assert.ok(packageTargetSource.includes("'distribution-bundle',"));
+    assert.ok(packageTargetSource.indexOf("'distribution-bundle',") > packageTargetSource.indexOf("'apps/desktop-host',"));
+    assert.ok(await readFile(path.join(upstreamRoot, 'distribution-bundle', 'workflows', 'distribution-smoke.md'), 'utf8'));
 
     const runtimeRoot = path.join(upstreamRoot, 'apps', 'desktop', '.desktop-build', 'targets', 'win-x64', 'dsh');
     const runtimePackageRoot = path.join(runtimeRoot, 'node_modules', '@thneoly', 'dsh-distribution-bundle');
@@ -52,7 +68,7 @@ test('distribution component adapter stages an optional bundle and verifies the 
     await cp(path.join(payloadRoot, 'distribution-bundle'), runtimePackageRoot, { recursive: true });
     await writeFile(path.join(runtimeRoot, 'package.json'), JSON.stringify({
       name: '@deepseek-ai/dsh',
-      dependencies: { '@thneoly/dsh-distribution-bundle': '1.0.0' }
+      dependencies: { '@thneoly/dsh-distribution-bundle': '0.2.1-rc.3' }
     }, null, 2) + '\n', 'utf8');
     const compiledProfile = path.join(runtimeRoot, 'node_modules', '@deepseek-ai', 'dsh-app-boot', 'lib');
     await mkdir(compiledProfile, { recursive: true });

@@ -1,9 +1,10 @@
 {
   "name": "@thneoly/dsh-distribution-bundle",
   "description": "Version-locked distribution diagnostics tools and workflow recipes for DeepSeek Harness",
-  "version": "1.0.0",
+  "version": "0.2.1-rc.3",
   "icon": "./icon.svg",
   "type": "module",
+  "private": true,
   "main": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
@@ -25,11 +26,9 @@
       "patch": "./cordis.patch.yml"
     }
   },
-  "dependencies": {
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "workspace:~",
     "@deepseek-ai/dsh-tools": "workspace:*",
     "@deepseek-ai/schemastery": "workspace:~"
-  },
-  "peerDependencies": {
-    "@deepseek-ai/cordis": "workspace:~"
   }
 }

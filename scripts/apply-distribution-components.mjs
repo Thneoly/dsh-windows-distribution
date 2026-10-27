@@ -28,6 +28,47 @@ async function patchCliDependency(upstreamRoot) {
   }
 }
 
+async function patchWorkspaceMembership(upstreamRoot) {
+  const workspacePath = path.join(upstreamRoot, 'pnpm-workspace.yaml');
+  const lines = (await readFile(workspacePath, 'utf8')).split(/\r?\n/);
+  const packageGlobIndex = lines.findIndex((line) => line.trim() === '- packages/*/*');
+  if (packageGlobIndex < 0) throw new Error('pinned upstream workspace no longer includes packages/*/*');
+  if (lines.some((line) => line.trim() === '- distribution-bundle')) return;
+  lines.splice(packageGlobIndex + 1, 0, '  - distribution-bundle');
+  await writeFile(workspacePath, lines.join('\n'), 'utf8');
+}
+
+async function patchPackageTarget(upstreamRoot) {
+  // 复用上游对 private 包（apps/desktop-host）的既定模式：family 打包后，
+  // 直接 pnpm --dir <pkg> pack 进 family 目录，让它进入 prepare-package-set 的闭包。
+  const targetPath = path.join(upstreamRoot, 'apps', 'desktop', 'scripts', 'package-target.ts');
+  let source = await readFile(targetPath, 'utf8');
+  if (source.includes("'distribution-bundle',")) return;
+  const anchor = [
+    "  await execute([",
+    "    '--dir',",
+    "    'apps/desktop-host',",
+    "    'pack',",
+    "    '--pack-destination',",
+    "    buildPaths.packedDsh,",
+    "  ], buildEnv, REPOSITORY_ROOT)",
+  ].join('\n');
+  const anchorIndex = source.indexOf(anchor);
+  if (anchorIndex < 0) throw new Error('pinned DSH package-target.ts desktop-host pack anchor was not found');
+  const insertion = anchor + [
+    "",
+    "  await execute([",
+    "    '--dir',",
+    "    'distribution-bundle',",
+    "    'pack',",
+    "    '--pack-destination',",
+    "    buildPaths.packedDsh,",
+    "  ], buildEnv, REPOSITORY_ROOT)",
+  ].join('\n');
+  source = source.slice(0, anchorIndex) + insertion + source.slice(anchorIndex + anchor.length);
+  await writeFile(targetPath, source, 'utf8');
+}
+
 async function patchOptionalBundleCatalog(upstreamRoot) {
   const sourcePath = path.join(upstreamRoot, 'packages', 'boot', 'app-boot', 'src', 'profile.ts');
   let source = await readFile(sourcePath, 'utf8');
@@ -64,8 +105,17 @@ export async function applyDistributionComponents(upstreamDirectory) {
     throw new Error('pinned upstream workspace no longer includes packages/*/*');
   }
 
+  // 注入机制（对齐上游对 private 包 apps/desktop-host 的既定模式）：
+  // ① 舞台到仓库顶层 distribution-bundle/，payload 里声明 private: true——
+  //    DshFamily 打包按 @deepseek-ai/* 命名 + 全家族同版本约束成员，private 包被跳过；
+  //    根部 tsdown 只扫 packages/*/* 与 apps/cli（desktop-host），顶层目录不在扫描内，
+  //    安装后的 lib/index.js 得以与锁定 payload 保持字节一致。
+  // ② pnpm-workspace 加一行成员，让 apps/cli 的 workspace:* 依赖可解析。
+  // ③ package-target.ts 在 desktop-host pack 之后同样把本包 pack 进 packed/dsh，
+  //    prepare-package-set 闭包由此把它选进 package set，运行时 pnpm 离线安装后
+  //    落在 runtimeRoot/node_modules/@thneoly/...，运行时 package.json 同步收录。
   const sourcePackage = path.join(distribution.payloadRoot, 'distribution-bundle');
-  const destinationPackage = path.join(upstreamRoot, 'packages', 'experimental', 'dsh-distribution-bundle');
+  const destinationPackage = path.join(upstreamRoot, 'distribution-bundle');
   try {
     await lstat(destinationPackage);
     throw new Error('distribution bundle destination already exists; refusing to overwrite upstream files');
@@ -74,8 +124,10 @@ export async function applyDistributionComponents(upstreamDirectory) {
   }
 
   await cp(sourcePackage, destinationPackage, { recursive: true, errorOnExist: true, force: false });
+  await patchWorkspaceMembership(upstreamRoot);
   await patchCliDependency(upstreamRoot);
   await patchOptionalBundleCatalog(upstreamRoot);
+  await patchPackageTarget(upstreamRoot);
 
   return {
     included: true,

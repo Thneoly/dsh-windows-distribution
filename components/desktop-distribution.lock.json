@@ -20,13 +20,13 @@
     {
       "id": "org.thneoly.distribution-bundle",
       "kind": "plugin",
-      "version": "1.0.0",
+      "version": "0.2.1-rc.3",
       "required": true,
       "requires": [],
       "files": [
         {
           "path": "distribution-bundle/package.json",
-          "sha256": "2082df829b269f84eeebcf7df4ec417494440590207929717c3c630c2b317b03"
+          "sha256": "7efaa07d66a690931a486c47ced3bb9ce5464a6e8aa4cbfeaeeb1be89238cf6a"
         },
         {
           "path": "distribution-bundle/lib/index.js",
