@@ -30,7 +30,7 @@
         },
         {
           "path": "distribution-bundle/lib/index.js",
-          "sha256": "c191e2e336f6c7f4f1f12255f6e8b3fd26dc7f2d8b52b7e64a0836a2aa41a356"
+          "sha256": "8d20deb575d40ee16ca55c095a99308b683d11970701f991e43548922c4f9b71"
         },
         {
           "path": "distribution-bundle/cordis.patch.yml",
@@ -61,7 +61,7 @@
       "files": [
         {
           "path": "distribution-bundle/workflows/distribution-smoke.md",
-          "sha256": "78519c979dd2e083f54aaf848063b9292d3b9452d5f7b1509cca531f88286a0a"
+          "sha256": "6711de220ad308946ddd6bdd5b1ca241d99e5e0cb28969914b27a5f996a84016"
         }
       ]
     },
@@ -76,7 +76,7 @@
       "files": [
         {
           "path": "distribution-bundle/lib/index.js",
-          "sha256": "c191e2e336f6c7f4f1f12255f6e8b3fd26dc7f2d8b52b7e64a0836a2aa41a356"
+          "sha256": "8d20deb575d40ee16ca55c095a99308b683d11970701f991e43548922c4f9b71"
         }
       ]
     },
@@ -92,7 +92,7 @@
       "files": [
         {
           "path": "distribution-bundle/lib/index.js",
-          "sha256": "c191e2e336f6c7f4f1f12255f6e8b3fd26dc7f2d8b52b7e64a0836a2aa41a356"
+          "sha256": "8d20deb575d40ee16ca55c095a99308b683d11970701f991e43548922c4f9b71"
         }
       ]
     }

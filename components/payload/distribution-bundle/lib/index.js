@@ -1,13 +1,15 @@
 import { readFile } from 'node:fs/promises';
 import { defineTool } from '@deepseek-ai/dsh-tools';
 import z from '@deepseek-ai/schemastery';
+import pkg from '../package.json' with { type: 'json' };
 
 export const name = 'dsh-distribution-bundle';
 export const inject = ['tools'];
 export const Config = z.object({});
 
 const BUNDLE_NAME = '@thneoly/dsh-distribution-bundle';
-const BUNDLE_VERSION = '1.0.0';
+// 版本随 package.json（DshFamily 基线要求跟随上游 release），杜绝硬编码漂移。
+const BUNDLE_VERSION = pkg.version;
 const WORKFLOWS = new Map([
   ['distribution-smoke', new URL('../workflows/distribution-smoke.md', import.meta.url)]
 ]);
