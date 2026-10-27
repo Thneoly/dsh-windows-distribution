@@ -308,6 +308,17 @@ async function main() {
   const pin = JSON.parse(await readFile(path.join(PROJECT_ROOT, 'upstream.lock.json'), 'utf8'));
   if (!['build-only', 'configured-test'].includes(values.profile)) throw new Error('--profile must be build-only or configured-test');
   if (values['build-version'] !== 'auto') validateBuildVersion(values['build-version']);
+  if (values['build-version'] === 'auto' && values.profile === 'build-only') {
+    // build-only 不接任何真实后端；上游的 auto 版本发现会强制要求
+    // DOWNLOAD_TEST_COS_BUCKET 等服务环境变量。这里按 CI workflow 同款规则
+    // 本地合成版本，保证"无需任何服务 URL"的承诺成立。
+    const now = new Date();
+    const utcDate = now.toISOString().slice(0, 10).replace(/-/g, '');
+    const clock = now.toISOString().slice(11, 19).replace(/:/g, '');
+    values['build-version'] = `${pin.release.version}.${utcDate}.local${clock}`;
+    validateBuildVersion(values['build-version']);
+    console.log('Build-only synthesized build version: ' + values['build-version']);
+  }
   await assertHostToolchain(pin);
   await mkdir(BUILD_ROOT, { recursive: true });
   await removeOwnedCheckout();
