@@ -1,7 +1,9 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][string]$ArtifactDirectory,
-    [Parameter(Mandatory)][string]$BuildVersion
+    [Parameter(Mandatory)][string]$BuildVersion,
+    # 构建根目录（含 upstream-dsh 工作区）。默认仓库内 .build；CI 的短路径构建传 C:\w。
+    [string]$BuildRoot
 )
 
 $ErrorActionPreference = 'Stop'
@@ -62,6 +64,8 @@ if ($manifestSum.Count -ne 1 -or $manifestSum[0].Split(' ')[0] -ne $manifestHash
 
 $pinPath = Join-Path $PSScriptRoot '..\upstream.lock.json'
 $pin = Get-Content -LiteralPath $pinPath -Raw | ConvertFrom-Json
+if (-not $BuildRoot) { $BuildRoot = Join-Path $PSScriptRoot '..\.build' }
+$upstreamRoot = Join-Path $BuildRoot 'upstream-dsh'
 $installDirectory = if ($env:GITHUB_RUN_ID) {
     "C:\dsh-smoke-$env:GITHUB_RUN_ID"
 } else {
@@ -108,7 +112,7 @@ try {
         }
     }
 
-    $asarTool = Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot '..\.build\upstream-dsh\node_modules\.pnpm') -Directory -Filter '@electron+asar@*' |
+    $asarTool = Get-ChildItem -LiteralPath (Join-Path $upstreamRoot 'node_modules\.pnpm') -Directory -Filter '@electron+asar@*' |
         Sort-Object Name -Descending | Select-Object -First 1 |
         ForEach-Object { Join-Path $_.FullName 'node_modules\@electron\asar\bin\asar.js' }
     if ($null -eq $asarTool -or -not (Test-Path -LiteralPath $asarTool -PathType Leaf)) {
@@ -200,7 +204,7 @@ try {
 
     # 工具执行冒烟跑在舞台副本上（依赖在 workspace 内可解析）：
     # extracted 摘要 == 组件锁 == 构建期已验证的舞台副本，字节等价传递执行正确性。
-    $stagedBundleEntry = Join-Path $PSScriptRoot '..\.build\upstream-dsh\distribution-bundle\lib\index.js'
+    $stagedBundleEntry = Join-Path $upstreamRoot 'distribution-bundle\lib\index.js'
     if (-not (Test-Path -LiteralPath $stagedBundleEntry -PathType Leaf)) {
         throw "Staged distribution bundle entry not found: $stagedBundleEntry"
     }
