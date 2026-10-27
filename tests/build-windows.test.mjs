@@ -136,8 +136,11 @@ test('Windows workflow installs the built EXE and validates bundled runtimes bef
   assert.ok(smokeStep >= 0 && uploadStep > smokeStep);
   assert.ok(windowsWorkflow.slice(smokeStep, uploadStep).includes('smoke-installed-windows.ps1'));
   assert.match(installedSmokeScript, /runtime\\primary-runtime/);
-  assert.match(installedSmokeScript, /Join-Path \$resources 'dsh'/);
-  assert.doesNotMatch(installedSmokeScript, /app\.asar\.unpacked/);
+  // 纯 JS 运行时在 app.asar 内，原生依赖在 app.asar.unpacked；冒烟需抽档校验。
+  assert.match(installedSmokeScript, /appUnpacked = Join-Path \$resources 'app\.asar\.unpacked'/);
+  assert.match(installedSmokeScript, /extract-file/);
+  assert.match(installedSmokeScript, /desktop-runtime\.json/);
+  assert.match(installedSmokeScript, /relativePath -eq 'package\.json'/);
   assert.match(installedSmokeScript, /distributionComponentsLockSha256/);
   assert.match(installedSmokeScript, /smoke-distribution-bundle\.mjs/);
   assert.match(bundleSmokeScript, /distribution_bundle_info/);
