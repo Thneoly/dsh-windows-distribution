@@ -1,5 +1,6 @@
 # Keep checked-in payloads and lock-file inputs byte-stable on Windows and Unix.
 *.json text eol=lf
+*.js text eol=lf
 *.mjs text eol=lf
 *.ps1 text eol=lf
 *.yml text eol=lf
