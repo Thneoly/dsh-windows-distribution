@@ -17,6 +17,7 @@ You can build the pinned installer before download, mandatory-update, or login s
 
 - It generates a separate ignored file, `config/windows-build-only.env`.
 - All application backend origins use the reserved `.invalid` domain, which is not a real service.
+- `--build-version auto` synthesizes a service-free local version (`<upstream-version>.<UTC date>.local<time>`) following the same rule as the CI workflow; upstream remote version discovery is never contacted.
 - The output manifest records `buildMode: unsigned-build-only`, `networkServicesConfigured: false`, and `distributionEligible: false`.
 - The installer can be used to inspect packaging and verify installation/runtime files, but login and automatic updates are intentionally unavailable. Do **not** distribute it or use it as an upgrade source for real installations.
 
@@ -35,6 +36,14 @@ Use `configured-test` only after actual test services exist. The upstream Deskto
 Both local config files are ignored by Git and are never copied into the artifact bundle. Unsigned packaging does not need EV signing credentials or upload credentials.
 
 ## Build locally on Windows x64
+
+### Local build-host pitfalls (verified 2026-10-26/27)
+
+1. **Run the build from PowerShell, not Git Bash.** Upstream packaging spawns `tar`; Git Bash resolves it to GNU tar, which interprets `D:\w\...` as a remote `host:path` and fails. Reordering PATH to prefer `System32\tar.exe` inside Git Bash instead hijacks `bash` to the WSL launcher (`System32\bash.exe`) and breaks npm's shell scripts. PowerShell gives the same tool resolution semantics as the CI runner.
+2. **Keep build caches and TEMP outside the repository tree.** electron-builder caches CommonJS helper scripts and executes them with Node; if the cache directory sits under any ancestor `package.json` with `"type": "module"`, those scripts die with `require is not defined in ES module scope`. Point `ELECTRON_BUILDER_CACHE`, `ELECTRON_CACHE`, `pnpm_config_store_dir`, `npm_config_cache`, `PIP_CACHE_DIR`, `TEMP` and `TMP` at directories outside the repo (and off the system drive if desired).
+3. **Use a physically short workspace path.** The `lxml` native DLL load fails once resolved paths approach 260 characters; clone to something like `D:\w` (equivalent in length to the CI runner's `C:\w`).
+
+### Commands
 
 From the repository root:
 
