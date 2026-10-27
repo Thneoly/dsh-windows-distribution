@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { pathToFileURL } from 'node:url';
 
 const entryPath = process.argv[2];
-if (!entryPath) throw new Error('Usage: node smoke-distribution-bundle.mjs <installed-bundle-entry.js>');
+const expectedVersion = process.argv[3];
+if (!entryPath || !expectedVersion) throw new Error('Usage: node smoke-distribution-bundle.mjs <bundle-entry.js> <expected-version>');
 
 const bundle = await import(pathToFileURL(entryPath).href);
 assert.equal(typeof bundle.apply, 'function', 'bundle must export its Cordis apply function');
@@ -27,11 +28,11 @@ const infoText = await infoTool.execute({});
 assert.equal(typeof infoText, 'string');
 const info = JSON.parse(infoText);
 assert.equal(info.bundle, '@thneoly/dsh-distribution-bundle');
-assert.equal(info.version, '1.0.0');
+assert.equal(info.version, expectedVersion);
 assert.ok(info.workflows.includes('distribution-smoke'));
 
 const workflowText = await workflowTool.execute({ id: 'distribution-smoke' });
-assert.match(workflowText, /Workflow version:.*1\.0\.0/);
+assert.match(workflowText, new RegExp('Workflow version:.*' + expectedVersion.replaceAll('.', '\\.')));
 assert.match(workflowText, /This workflow is read-only/i);
 
 await assert.rejects(
@@ -39,4 +40,4 @@ await assert.rejects(
   /unknown bundled workflow/
 );
 
-console.log('PASS: distribution bundle registered both tools, reported version 1.0.0, and read its locked workflow.');
+console.log('PASS: distribution bundle registered both tools, reported version ' + expectedVersion + ', and read its locked workflow.');
