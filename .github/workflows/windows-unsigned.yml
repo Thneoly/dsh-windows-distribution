@@ -195,8 +195,8 @@ jobs:
       - name: Install unsigned installer and verify bundled runtime
         shell: pwsh
         run: |
-          # 构建在物理短路径 C:\w 进行（上游工作区与 asar 工具在那里），产物拷回 GitHub workspace。
-          & "$env:GITHUB_WORKSPACE\scripts\smoke-installed-windows.ps1" -ArtifactDirectory "$env:GITHUB_WORKSPACE\.build\artifacts\$env:BUILD_VERSION" -BuildVersion "$env:BUILD_VERSION" -BuildRoot "C:\w"
+          # 构建在物理短路径 C:\w 进行（上游工作区在 C:\w\.build，asar 工具与舞台 bundle 在那里），产物拷回 GitHub workspace。
+          & "$env:GITHUB_WORKSPACE\scripts\smoke-installed-windows.ps1" -ArtifactDirectory "$env:GITHUB_WORKSPACE\.build\artifacts\$env:BUILD_VERSION" -BuildVersion "$env:BUILD_VERSION" -BuildRoot "C:\w\.build"
 
       - name: Upload unsigned installer and provenance
         uses: actions/upload-artifact@v7
